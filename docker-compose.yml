@@ -1,0 +1,53 @@
+version: "3.8"
+services:
+  mysql:
+    build: ./mysql
+    ports:
+      - "3306:3306"
+    env_file:
+      - ./env/mysql.env
+    container_name: mysql
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3306"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+  redis:
+    build: ./redis
+    ports:
+      - "6379:6379"
+    env_file:
+      - "./env/redis.env"
+    container_name: redis
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:6379"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+  security:
+    build: ./backend/security
+    ports:
+      - "7080:7080"
+    volumes:
+      - uploads:/app/uploads
+    env_file:
+      - "./env/security.env"
+    container_name: security
+    restart: on-failure
+    depends_on:
+      - mysql
+      - redis
+  general:
+    build: ./backend/general
+    ports:
+      - "8080:8080"
+    env_file:
+      - "./env/general.env"
+    container_name: general
+    restart: on-failure
+    depends_on:
+      - mysql
+      - redis
+
+volumes:
+  uploads:
