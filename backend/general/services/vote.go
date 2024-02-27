@@ -2,6 +2,7 @@ package services
 
 import (
 	"database/sql"
+	"log"
 	"net/http"
 )
 
@@ -14,16 +15,22 @@ func Vote(userId int64, sourceId int64, score int16, voteType *string) (string, 
 	}
 
 	var count int
+	var voteId int64
 	if err := row.Scan(&count); err != nil || count == 0 {
 		return "source not exist", http.StatusBadRequest
 	}
-	row = connPool.QueryRow("select count(*) from votes where user_id = ? and source_id = ?", userId, sourceId)
-	if err := row.Scan(&count); err != nil || count != 0 {
-		return "vote already exist", http.StatusBadRequest
+	row = connPool.QueryRow("select vote_id from votes where user_id = ? and source_id = ?", userId, sourceId)
+	if err := row.Scan(&voteId); err == nil {
+		if UpdateVote(userId, voteId, score) {
+			return "", voteId
+		} else {
+			return "failed to execute query", http.StatusInternalServerError
+		}
 	}
 
 	sqlRes, err := connPool.Exec("insert into votes (user_id, source_id, score, vote_type) values (?, ?, ?, ?)", userId, sourceId, score, *voteType)
 	if err != nil {
+		log.Println(err)
 		return "failed to execute query", http.StatusInternalServerError
 	}
 
@@ -32,21 +39,22 @@ func Vote(userId int64, sourceId int64, score int16, voteType *string) (string, 
 }
 
 func UpdateVote(userId int64, voteId int64, score int16) bool {
-	row := connPool.QueryRow("select user_id from votes where vote_id = ?", voteId)
+	row := connPool.QueryRow("select user_id, score from votes where vote_id = ?", voteId)
 	var actualUserId int64
-	err := row.Scan(&actualUserId)
+	var prevScore int16
+	err := row.Scan(&actualUserId, &prevScore)
 	if err != nil {
+		log.Println(err)
 		return false
 	}
-
 	if userId != actualUserId {
 		return false
 	}
-
-	_, err = connPool.Exec("update votes set score = ? where vote_id = ?", score, voteId)
-	if err != nil {
-		return false
+	if prevScore == score {
+		score = 0
 	}
 
-	return true
+	_, err = connPool.Exec("update votes set score = ? where vote_id = ?", score, voteId)
+	log.Println(err)
+	return err == nil
 }

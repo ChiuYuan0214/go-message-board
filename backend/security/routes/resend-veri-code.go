@@ -18,8 +18,8 @@ func init() {
 }
 
 func handleResendCode(writer http.ResponseWriter, req *http.Request) {
-	setContentType(writer, "json")
-	res, status := resendCodeMap.useHandler(req)
+	setHeader(writer, "json")
+	res, status := resendCodeMap.useHandler(writer, req)
 	DoResponse(res, status, writer)
 }
 
@@ -54,5 +54,5 @@ func resendCode(req *http.Request) (res interface{}, statusCode int) {
 	}
 	services.ScheduleCodeInvalidation(codeId, veriCode)
 
-	return newRes("success"), http.StatusOK
+	return newRes("success").setItem("expireTime", veriCode.ExpireTime), http.StatusOK
 }

@@ -7,6 +7,7 @@ import (
 	"general/utils"
 	"net/http"
 	"strconv"
+	"time"
 )
 
 var articleMap = MethodMapType{}
@@ -19,16 +20,16 @@ func init() {
 }
 
 func handleArticle(writer http.ResponseWriter, req *http.Request) {
-	setContentType(writer, "json")
-	res, status := articleMap.useHandler(req)
+	setHeader(writer, "json")
+	res, status := articleMap.useHandler(writer, req)
 	DoResponse(res, status, writer)
 }
 
 func getArticle(req *http.Request) (res interface{}, statusCode int) {
+	userId := getUserIdFromQuery(req)
 	query := getQuery(req)
 	id := query.Get("articleId")
-
-	article, status := services.GetArticle(id)
+	article, status := services.GetArticle(userId, id)
 	if status != 0 {
 		var message string
 		switch status {
@@ -56,7 +57,12 @@ func addArticle(req *http.Request) (res interface{}, statusCode int) {
 		return newRes("fail").message("body format was wrong."), http.StatusBadRequest
 	}
 
-	id := services.InsertArticle(userId, &data)
+	publishTime, err := time.Parse("2006-01-02T15:04", data.PublishTime)
+	if err != nil {
+		return "time format was wrong", http.StatusBadRequest
+	}
+
+	id := services.InsertArticle(userId, &data, &publishTime)
 	if id == 0 {
 		return newRes("fail").message("failed to insert article."), http.StatusInternalServerError
 	}

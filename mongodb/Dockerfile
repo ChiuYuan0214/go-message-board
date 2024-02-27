@@ -1,7 +1,7 @@
 FROM mongo
 
+WORKDIR /data
 
-ENV MONGO_INITDB_ROOT_USERNAME: tester
-ENV MONGO_INITDB_ROOT_PASSWORD: 1111
+COPY init.js /docker-entrypoint-initdb.d/init.js
 
 EXPOSE 27017

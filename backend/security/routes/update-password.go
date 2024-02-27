@@ -18,8 +18,8 @@ func init() {
 }
 
 func handleUpdatePassword(writer http.ResponseWriter, req *http.Request) {
-	setContentType(writer, "json")
-	res, status := updatePassMap.useHandler(req)
+	setHeader(writer, "json")
+	res, status := updatePassMap.useHandler(writer, req)
 	DoResponse(res, status, writer)
 }
 

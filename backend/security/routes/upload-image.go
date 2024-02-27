@@ -16,8 +16,8 @@ func init() {
 }
 
 func handleUploadImage(writer http.ResponseWriter, req *http.Request) {
-	setContentType(writer, "json")
-	res, status := uploadImageMap.useHandler(req)
+	setHeader(writer, "json")
+	res, status := uploadImageMap.useHandler(writer, req)
 	DoResponse(res, status, writer)
 }
 

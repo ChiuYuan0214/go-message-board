@@ -24,6 +24,18 @@ services:
       interval: 10s
       timeout: 10s
       retries: 5
+  mongodb:
+    build: ./mongodb
+    ports:
+      - "27017:27017"
+    env_file:
+      - "./env/mongo.env"
+    container_name: mongodb
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:27017"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
   security:
     build: ./backend/security
     ports:
@@ -48,6 +60,30 @@ services:
     depends_on:
       - mysql
       - redis
+  chat:
+    build: ./backend/chat
+    ports:
+      - "9080:9080"
+    env_file:
+      - "./env/chat.env"
+    container_name: chat
+    restart: on-failure
+    depends_on:
+      - mysql
+      - redis
+      - mongodb
+  frontend:
+    build: ./frontend
+    ports:
+      - "3000:3000"
+    env_file:
+      - "./env/frontend.env"
+    container_name: frontend
+    restart: on-failure
+    depends_on:
+      - security
+      - general
+      - chat
 
 volumes:
   uploads:

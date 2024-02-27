@@ -1,12 +1,10 @@
 package types
 
-import "time"
-
 type AddArticleData struct {
-	Title       string    `json:"title"`
-	Content     string    `json:"content"`
-	PublishTime time.Time `json:"publishTime"`
-	Tags        []string  `json:"tags"`
+	Title       string   `json:"title"`
+	Content     string   `json:"content"`
+	PublishTime string   `json:"publishTime"`
+	Tags        []string `json:"tags"`
 }
 
 type UpdateArticleData struct {
@@ -25,4 +23,12 @@ type UpdateCommentData struct {
 	CommentId int64  `json:"commentId"`
 	Title     string `json:"title"`
 	Content   string `json:"content"`
+}
+
+type FollowData struct {
+	Followee uint64 `json:"followee"`
+}
+
+type FollowerData struct {
+	Follower uint64 `json:"follower"`
 }

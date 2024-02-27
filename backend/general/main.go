@@ -12,12 +12,15 @@ const PORT = 8080
 
 func main() {
 	constants.InitEnv()
+
 	db := setup.InitMySQL()
+	defer db.Close()
 	routes.UsePool(db)
 	services.UsePool(db)
 	jobs.UsePool(db)
 
 	cache := setup.InitCache()
+	defer cache.Client.Close()
 	services.UseCache(cache)
 	jobs.UseCache(cache)
 
@@ -25,5 +28,4 @@ func main() {
 	jobs.UseScheduler()
 
 	setup.InitServer()
-	db.Close()
 }

@@ -7,8 +7,9 @@ import (
 )
 
 var (
-	IP_ADDRESS           = "127.0.0.1"
-	PORT                 = "7080"
+	IP_ADDRESS = "127.0.0.1"
+	PORT       = "7080"
+
 	ADMIN_MAIL_ADDRESS   = "test@gmail.com"
 	ADMIN_MAIL_PASSWORD  = "1111"
 	JWT_HS256_SECRET_KEY = "jwt_key"
@@ -16,7 +17,7 @@ var (
 	MYSQL_PORT     = "3306"
 	MYSQL_PASSWORD = "1111"
 	REDIS_PORT     = "6379"
-	REDIS_PASSWORD = "1111"
+	REDIS_PASSWORD = "test1234"
 
 	VERI_CODE_TTL = 3 // minutes
 )

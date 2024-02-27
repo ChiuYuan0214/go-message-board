@@ -19,4 +19,7 @@ func UseDispatcher() {
 	http.HandleFunc("/updatePassword", authMiddle(handleUpdatePassword))
 	http.HandleFunc("/updateProfile", authMiddle(handleUpdateProfile))
 	http.HandleFunc("/uploadImage", authMiddle(handleUploadImage))
+
+	fs := http.FileServer(http.Dir("./uploads/images/"))
+	http.Handle("/uploads/images/", http.StripPrefix("/uploads/images/", fs))
 }

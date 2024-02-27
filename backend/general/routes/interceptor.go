@@ -10,6 +10,10 @@ var errRes = newRes("fail").message("Unauthorized")
 
 func authMiddle(next http.HandlerFunc) http.HandlerFunc {
 	return func(writer http.ResponseWriter, req *http.Request) {
+		if req.Method == http.MethodOptions {
+			next.ServeHTTP(writer, req)
+			return
+		}
 		userId := utils.IsAuth(req)
 		if userId == 0 {
 			http.Error(writer, "Unauthorized", http.StatusUnauthorized)

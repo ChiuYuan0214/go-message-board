@@ -20,8 +20,8 @@ func init() {
 }
 
 func handleUpdateProfile(writer http.ResponseWriter, req *http.Request) {
-	setContentType(writer, "json")
-	res, status := updateProfileMap.useHandler(req)
+	setHeader(writer, "json")
+	res, status := updateProfileMap.useHandler(writer, req)
 	DoResponse(res, status, writer)
 }
 

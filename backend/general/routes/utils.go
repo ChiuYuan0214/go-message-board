@@ -41,14 +41,15 @@ func trigger(handler HandlerType, request *http.Request) (res interface{}, statu
 	return handler(request)
 }
 
-func setContentType(writer http.ResponseWriter, contentType string) {
+func setHeader(writer http.ResponseWriter, contentType string) {
+	SetCORS(writer)
 	switch contentType {
 	default:
 		writer.Header().Set("Content-Type", "application/json")
 	}
 }
 
-func (this *MethodMapType) useHandler(request *http.Request) (res interface{}, statusCode int) {
+func (mm *MethodMapType) useHandler(writer http.ResponseWriter, request *http.Request) (res interface{}, statusCode int) {
 	var method string
 	switch request.Method {
 	case http.MethodGet:
@@ -59,8 +60,10 @@ func (this *MethodMapType) useHandler(request *http.Request) (res interface{}, s
 		method = "POST"
 	case http.MethodDelete:
 		method = "DELETE"
+	case http.MethodOptions:
+		return newRes("success"), http.StatusOK
 	}
-	handler, exist := (*this)[method]
+	handler, exist := (*mm)[method]
 	if !exist {
 		return newRes("fail").message("Method not allowed."), http.StatusBadRequest
 	}
@@ -76,7 +79,11 @@ func getParam(req *http.Request, key string) string {
 }
 
 func getUserIdFromContext(req *http.Request) int64 {
-	return req.Context().Value("userId").(int64)
+	id := req.Context().Value("userId")
+	if id == nil {
+		return 0
+	}
+	return id.(int64)
 }
 
 func getUserIdFromQuery(req *http.Request) int64 {
@@ -140,15 +147,21 @@ func (res *ResponseMessage) setList(key string, list interface{}) *ResponseMessa
 	return res
 }
 
+func SetCORS(writer http.ResponseWriter) {
+	writer.Header().Set("Access-Control-Allow-Origin", "*")
+	writer.Header().Add("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE")
+	writer.Header().Add("Access-Control-Allow-Headers", "Content-Type, Authorization")
+	writer.Header().Add("Access-Control-Allow-Credentials", "true")
+}
+
 func DoResponse(res interface{}, statusCode int, writer http.ResponseWriter) {
 	writer.WriteHeader(statusCode)
-	writer.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(writer).Encode(res)
 }
 
 func isErr(err error) bool {
 	if err != nil {
-		log.Println("error:", err)
+		log.Println(err)
 		return true
 	}
 	return false

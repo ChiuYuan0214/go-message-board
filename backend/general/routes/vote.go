@@ -24,8 +24,8 @@ func init() {
 }
 
 func handleVote(writer http.ResponseWriter, req *http.Request) {
-	setContentType(writer, "json")
-	res, status := voteMap.useHandler(req)
+	setHeader(writer, "json")
+	res, status := voteMap.useHandler(writer, req)
 	DoResponse(res, status, writer)
 }
 

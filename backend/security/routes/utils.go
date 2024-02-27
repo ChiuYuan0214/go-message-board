@@ -10,34 +10,35 @@ import (
 type HandlerType func(req *http.Request) (res interface{}, statusCode int)
 type MethodMapType map[string]HandlerType
 
-func (this *MethodMapType) get(f HandlerType) *MethodMapType {
-	(*this)["GET"] = f
-	return this
+func (mm *MethodMapType) get(f HandlerType) *MethodMapType {
+	(*mm)["GET"] = f
+	return mm
 }
 
-func (this *MethodMapType) put(f HandlerType) *MethodMapType {
-	(*this)["PUT"] = f
-	return this
+func (mm *MethodMapType) put(f HandlerType) *MethodMapType {
+	(*mm)["PUT"] = f
+	return mm
 }
 
-func (this *MethodMapType) post(f HandlerType) *MethodMapType {
-	(*this)["POST"] = f
-	return this
+func (mm *MethodMapType) post(f HandlerType) *MethodMapType {
+	(*mm)["POST"] = f
+	return mm
 }
 
-func (this *MethodMapType) delete(f HandlerType) *MethodMapType {
-	(*this)["DELETE"] = f
-	return this
+func (mm *MethodMapType) delete(f HandlerType) *MethodMapType {
+	(*mm)["DELETE"] = f
+	return mm
 }
 
-func setContentType(writer http.ResponseWriter, contentType string) {
+func setHeader(writer http.ResponseWriter, contentType string) {
+	SetCORS(writer)
 	switch contentType {
 	default:
 		writer.Header().Set("Content-Type", "application/json")
 	}
 }
 
-func (methodMap *MethodMapType) useHandler(request *http.Request) (res interface{}, statusCode int) {
+func (methodMap *MethodMapType) useHandler(writer http.ResponseWriter, request *http.Request) (res interface{}, statusCode int) {
 	var method string
 	switch request.Method {
 	case http.MethodGet:
@@ -48,6 +49,8 @@ func (methodMap *MethodMapType) useHandler(request *http.Request) (res interface
 		method = "POST"
 	case http.MethodDelete:
 		method = "DELETE"
+	case http.MethodOptions:
+		return newRes("success"), http.StatusOK
 	}
 	handler, exist := (*methodMap)[method]
 	if !exist {
@@ -89,6 +92,13 @@ func (res *ResponseMessage) setItem(key string, item interface{}) *ResponseMessa
 func (res *ResponseMessage) setList(key string, list []interface{}) *ResponseMessage {
 	(*res)[key] = list
 	return res
+}
+
+func SetCORS(writer http.ResponseWriter) {
+	writer.Header().Set("Access-Control-Allow-Origin", "*")
+	writer.Header().Add("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE")
+	writer.Header().Add("Access-Control-Allow-Headers", "Content-Type, Authorization")
+	writer.Header().Add("Access-Control-Allow-Credentials", "true")
 }
 
 func DoResponse(res interface{}, statusCode int, writer http.ResponseWriter) {

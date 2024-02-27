@@ -17,8 +17,8 @@ func init() {
 }
 
 func handleRegister(writer http.ResponseWriter, req *http.Request) {
-	setContentType(writer, "json")
-	res, status := registerMap.useHandler(req)
+	setHeader(writer, "json")
+	res, status := registerMap.useHandler(writer, req)
 	DoResponse(res, status, writer)
 }
 
@@ -87,5 +87,5 @@ func newRegister(req *http.Request) (res interface{}, statusCode int) {
 		log.Printf("failed to record verification code for userId %d.", userId)
 	}
 
-	return newRes("success").setItem("expireTime", expireTime), http.StatusOK
+	return newRes("success").setItem("expireTime", expireTime).setItem("userId", userId), http.StatusOK
 }

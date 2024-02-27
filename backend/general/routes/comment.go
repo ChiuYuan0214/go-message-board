@@ -14,8 +14,8 @@ func init() {
 }
 
 func handleComment(writer http.ResponseWriter, req *http.Request) {
-	setContentType(writer, "json")
-	res, status := commentMap.useHandler(req)
+	setHeader(writer, "json")
+	res, status := commentMap.useHandler(writer, req)
 	DoResponse(res, status, writer)
 }
 

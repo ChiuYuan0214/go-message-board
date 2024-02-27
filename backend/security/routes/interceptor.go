@@ -9,6 +9,11 @@ import (
 
 func authMiddle(next http.HandlerFunc) http.HandlerFunc {
 	return func(writer http.ResponseWriter, req *http.Request) {
+		if req.Method == http.MethodOptions {
+			next.ServeHTTP(writer, req)
+			return
+		}
+
 		authHeader := req.Header.Get("Authorization")
 		if authHeader == "" {
 			http.Error(writer, "Unauthorized", http.StatusUnauthorized)

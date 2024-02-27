@@ -12,8 +12,8 @@ func init() {
 }
 
 func handleView(writer http.ResponseWriter, req *http.Request) {
-	setContentType(writer, "json")
-	res, status := viewMap.useHandler(req)
+	setHeader(writer, "json")
+	res, status := viewMap.useHandler(writer, req)
 	DoResponse(res, status, writer)
 }
 

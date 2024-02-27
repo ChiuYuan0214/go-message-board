@@ -1,7 +1,6 @@
 package services
 
 import (
-	"database/sql"
 	"fmt"
 	"security/utils"
 	"time"
@@ -27,9 +26,12 @@ func CheckEmailExist(email string) bool {
 }
 
 func AddNewUser(username string, email string, password string,
-	phone sql.NullString, job sql.NullString, address sql.NullString) int64 {
+	phone string, job string, address string) int64 {
 	sqlRes, err := connPool.Exec(`insert into users (username, email, password, phone, job, address) 
 	values (?, ?, ?, ?, ?, ?)`, username, email, password, phone, job, address)
+	if err != nil {
+		return 0
+	}
 
 	count, err := sqlRes.RowsAffected()
 	if err != nil || count < 1 {
@@ -42,6 +44,9 @@ func AddNewUser(username string, email string, password string,
 func InsertVerificationCode(userId int64, code int32, expireTime time.Time) int64 {
 	sqlRes, err := connPool.Exec(`insert into verification_codes (user_id, code, expire_time) 
 	                              values (?, ?, ?)`, userId, fmt.Sprintf("%06d", code), expireTime)
+	if err != nil {
+		return 0
+	}
 	id, err := sqlRes.LastInsertId()
 	if err != nil {
 		return 0
@@ -51,20 +56,20 @@ func InsertVerificationCode(userId int64, code int32, expireTime time.Time) int6
 
 func InvalidateVerificationCodes(userId int64) bool {
 	sqlRes, err := connPool.Exec(`update verification_codes set valid = false where user_id = ?`, userId)
-	_, err = sqlRes.RowsAffected()
 	if err != nil {
 		return false
 	}
-	return true
+	_, err = sqlRes.RowsAffected()
+	return err == nil
 }
 
 func InvalidateVerificationCodesByCodeId(codeId int64) bool {
 	sqlRes, err := connPool.Exec(`update verification_codes set valid = false where code_id = ?`, codeId)
-	_, err = sqlRes.RowsAffected()
 	if err != nil {
 		return false
 	}
-	return true
+	_, err = sqlRes.RowsAffected()
+	return err == nil
 }
 
 func ScheduleCodeInvalidation(codeId int64, veriCode *utils.VerificationCode) {
@@ -80,10 +85,7 @@ func ScheduleCodeInvalidation(codeId int64, veriCode *utils.VerificationCode) {
 
 func ActivateUser(userId int64) bool {
 	_, err := connPool.Exec("update users set is_active = true where user_id = ?", userId)
-	if err != nil {
-		return false
-	}
-	return true
+	return err == nil
 }
 
 func VerifyPasswordByEmail(email *string, password *string) int64 {

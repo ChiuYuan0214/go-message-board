@@ -10,7 +10,7 @@ var (
 	MYSQL_PORT            = "3306"
 	MYSQL_PASSWORD        = "1111"
 	REDIS_PORT            = "6379"
-	REDIS_PASSWORD        = "1111"
+	REDIS_PASSWORD        = "test1234"
 	JWT_HS256_SECRET_KEY  = "jwt-key"
 	VIEW_COUNT_CACHE_NAME = "viewCount"
 	VIEW_LIST_NAME        = "viewList"
@@ -18,7 +18,6 @@ var (
 	HOT_LIST_NAMAE        = "hotList"
 )
 
-// docker run --name go-general -p 8080:8080 -e IP_ADDRESS="host.docker.internal" security-img
 func InitEnv() {
 	setVal(&IP_ADDRESS, "IP_ADDRESS")
 	setVal(&PORT, "PORT")

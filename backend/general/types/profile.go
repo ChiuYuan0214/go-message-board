@@ -1,10 +1,14 @@
 package types
 
 type Profile struct {
-	UserId   uint64 `json:"userId"`
-	Username string `json:"username"`
-	Job      string `json:"job"`
-	IsActive bool   `json:"isActive"`
+	UserId       uint64 `json:"userId"`
+	Username     string `json:"username"`
+	Job          string `json:"job"`
+	IsActive     bool   `json:"isActive"`
+	ImagePath    string `json:"imagePath"`
+	ArticleCount int32  `json:"articleCount"`
+	CommentCount int32  `json:"commentCount"`
+	UpVoteCount  int32  `json:"upVoteCount"`
 }
 
 type SelfProfile struct {
@@ -15,5 +19,9 @@ type SelfProfile struct {
 	Phone        string `json:"phone"`
 	Job          string `json:"job"`
 	Address      string `json:"address"`
+	ImagePath    string `json:"imagePath"`
 	CreationTime string `json:"creationTime"`
+	ArticleCount int32  `json:"articleCount"`
+	CommentCount int32  `json:"commentCount"`
+	UpVoteCount  int32  `json:"upVoteCount"`
 }

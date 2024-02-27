@@ -19,8 +19,8 @@ func init() {
 }
 
 func handleVerifyCode(writer http.ResponseWriter, req *http.Request) {
-	setContentType(writer, "json")
-	res, status := verifyMap.useHandler(req)
+	setHeader(writer, "json")
+	res, status := verifyMap.useHandler(writer, req)
 	DoResponse(res, status, writer)
 }
 
@@ -45,6 +45,9 @@ func doVerify(req *http.Request) (res interface{}, statusCode int) {
 	}
 	var code string
 	err = rows.Scan(&code)
+	if err != nil {
+		return newRes("fail").message("something went wrong."), http.StatusInternalServerError
+	}
 	if code != fmt.Sprintf("%06d", data.Code) {
 		return newRes("fail").message("code does not match."), http.StatusOK
 	}

@@ -13,8 +13,8 @@ func init() {
 }
 
 func handleComments(writer http.ResponseWriter, req *http.Request) {
-	setContentType(writer, "json")
-	res, status := commentsMap.useHandler(req)
+	setHeader(writer, "json")
+	res, status := commentsMap.useHandler(writer, req)
 	DoResponse(res, status, writer)
 }
 
@@ -25,5 +25,5 @@ func getComments(req *http.Request) (res interface{}, statusCode int) {
 		return newRes("fail").message("articleId format incorrect."), http.StatusBadRequest
 	}
 	data := services.GetComments(articleId)
-	return newRes("success").setList("list", data), http.StatusOK
+	return newRes("success").setList("list", *data), http.StatusOK
 }

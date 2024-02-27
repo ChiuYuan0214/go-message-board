@@ -23,8 +23,8 @@ func init() {
 }
 
 func handleLogin(writer http.ResponseWriter, req *http.Request) {
-	setContentType(writer, "json")
-	res, status := loginMap.useHandler(req)
+	setHeader(writer, "json")
+	res, status := loginMap.useHandler(writer, req)
 	DoResponse(res, status, writer)
 }
 
@@ -43,7 +43,7 @@ func login(req *http.Request) (res interface{}, statusCode int) {
 		return newRes("fail").message("failed to create token"), http.StatusInternalServerError
 	}
 
-	return newRes("success").setItem("token", token.Token).setItem("expireTime", token.ExpireTime), http.StatusOK
+	return newRes("success").setItem("userId", userId).setItem("token", token.Token).setItem("expireTime", token.ExpireTime), http.StatusOK
 }
 
 func refreshToken(req *http.Request) (res interface{}, statusCode int) {
@@ -62,6 +62,5 @@ func refreshToken(req *http.Request) (res interface{}, statusCode int) {
 	}
 
 	token := services.GenerateToken(data.UserId)
-
 	return newRes("success").setItem("token", token.Token).setItem("expireTime", token.ExpireTime), http.StatusOK
 }

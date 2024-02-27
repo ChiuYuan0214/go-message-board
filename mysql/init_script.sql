@@ -82,3 +82,18 @@ create table if not exists images (
     update_time datetime default current_timestamp on update current_timestamp
 );
 
+create table if not exists followers (
+    user_id int,
+    follower_id int,
+    foreign key (user_id) references users(user_id),
+    primary key (user_id, follower_id)
+);
+
+create table if not exists collections (
+    user_id int,
+    article_id int,
+    foreign key (user_id) references users(user_id),
+    foreign key (article_id) references articles(article_id),
+    primary key (user_id, article_id)
+);
+
