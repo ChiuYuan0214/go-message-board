@@ -15,7 +15,7 @@ type BsonMessage struct{}
 func InitMongo() *types.MongoClient {
 	client, err := mongo.Connect(context.Background(), options.Client().ApplyURI(
 		"mongodb://"+constants.MONGO_INITDB_ROOT_USERNAME+":"+constants.MONGO_INITDB_ROOT_PASSWORD+
-			"@"+constants.IP_ADDRESS+":"+constants.MONGO_PORT))
+			"@"+constants.MONGO_IP))
 	if err != nil {
 		log.Fatal(err)
 	}

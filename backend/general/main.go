@@ -8,8 +8,6 @@ import (
 	"general/setup"
 )
 
-const PORT = 8080
-
 func main() {
 	constants.InitEnv()
 

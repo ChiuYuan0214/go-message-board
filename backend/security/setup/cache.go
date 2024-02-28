@@ -3,6 +3,7 @@ package setup
 import (
 	"context"
 	"fmt"
+	"log"
 	"security/constants"
 	"security/types"
 
@@ -11,7 +12,7 @@ import (
 
 func InitCache() *types.RedisCache {
 	client := redis.NewClient(&redis.Options{
-		Addr:     constants.IP_ADDRESS + ":" + constants.REDIS_PORT,
+		Addr:     constants.REDIS_IP,
 		Password: constants.REDIS_PASSWORD,
 		DB:       0,
 	})
@@ -19,6 +20,7 @@ func InitCache() *types.RedisCache {
 	var ctx = context.Background()
 	_, err := client.Ping(ctx).Result()
 	if err != nil {
+		log.Println(err)
 		panic("Unable to connect to redis.")
 	}
 	fmt.Print("connected to redis")

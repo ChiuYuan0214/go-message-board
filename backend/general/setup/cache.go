@@ -11,7 +11,7 @@ import (
 
 func InitCache() *types.RedisCache {
 	client := redis.NewClient(&redis.Options{
-		Addr:     constants.IP_ADDRESS + ":" + constants.REDIS_PORT,
+		Addr:     constants.REDIS_IP,
 		Password: constants.REDIS_PASSWORD,
 		DB:       0,
 	})

@@ -1,0 +1,71 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mysql-env
+data:
+  mysql-password: your-mysql-password
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: redis-env
+data:
+  redis-password: "test1234"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mongodb-env
+data:
+  mongo-database: your-mongo-database-name
+  mongo-username: your-mongo-username
+  mongo-password: your-mongo-password
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: security-env
+data:
+  mysql-ip: "127.0.0.1:3306"
+  redis-ip: "127.0.0.1:6379"
+  mysql-password: your-mysql-password
+  redis-password: "test1234"
+  admin-mail-address: your-mail-address
+  admin-mail-password: your-mail-password
+  jwt-key: your-jwt-key
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: general-env
+data:
+  mysql-ip: "127.0.0.1:3306"
+  redis-ip: "127.0.0.1:6379"
+  mysql-password: your-mysql-password
+  redis-password: "test1234"
+  jwt-key: your-jwt-key
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: chat-env
+data:
+  mysql-ip: "127.0.0.1:3306"
+  redis-ip: "127.0.0.1:6379"
+  mongo-ip: "127.0.0.1:27017"
+  mysql-password: your-mysql-password
+  redis-password: "test1234"
+  mongo-database: your-mongo-database-name
+  mongo-username: your-mongo-username
+  mongo-password: your-mongo-password
+  jwt-key: your-jwt-key
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: frontend-env
+data:
+  general-ip: "http://127.0.0.1:8080"
+  security-ip: "http://127.0.0.1:7080"
+  image-path: "http://127.0.0.1:7080/uploads/images/"
+  socket-uri: "ws://127.0.0.1:9080/chat"

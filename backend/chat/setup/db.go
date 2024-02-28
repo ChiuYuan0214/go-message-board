@@ -13,8 +13,7 @@ func InitMySQL() *sql.DB {
 	var pool *sql.DB
 	var err error
 	for {
-		connectionString := "root:" + constants.MYSQL_PASSWORD + "@tcp(" + constants.IP_ADDRESS + ":" +
-			constants.MYSQL_PORT + ")/go_project?parseTime=true"
+		connectionString := "root:" + constants.MYSQL_PASSWORD + "@tcp(" + constants.MYSQL_IP + ")/go_project?parseTime=true"
 
 		// create a connection pool
 		pool, err = sql.Open("mysql", connectionString)

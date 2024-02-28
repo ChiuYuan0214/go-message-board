@@ -1,0 +1,55 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend-service
+spec:
+  selector:
+    app: frontend
+  type: LoadBalancer
+  ports:
+    - protocol: TCP
+      port: 3000
+      targetPort: 3000
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: frontend
+  template:
+    metadata:
+      labels:
+        app: frontend
+    spec:
+      containers:
+        - name: frontend
+          image: adamchiu0214/message-board-frontend:latest
+          env:
+            - name: GENERAL_IP
+              valueFrom:
+                configMapKeyRef:
+                  name: frontend-env
+                  key: general-ip
+            - name: SSR_GENERAL_IP
+              value: "http://general-service.default:8080"
+            - name: SECURITY_IP
+              valueFrom:
+                configMapKeyRef:
+                  name: frontend-env
+                  key: security-ip
+            - name: SSR_SECURITY_IP
+              value: "http://security-service.default:7080"
+            - name: IMAGE_PATH
+              valueFrom:
+                configMapKeyRef:
+                  name: frontend-env
+                  key: image-path
+            - name: SOCKET_URI
+              valueFrom:
+                configMapKeyRef:
+                  name: frontend-env
+                  key: socket-uri
