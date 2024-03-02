@@ -1,17 +1,5 @@
 version: "3.8"
 services:
-  mysql:
-    build: ./mysql
-    ports:
-      - "3306:3306"
-    env_file:
-      - ./env/mysql.env
-    container_name: mysql
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3306"]
-      interval: 10s
-      timeout: 10s
-      retries: 5
   redis:
     build: ./redis
     ports:
@@ -21,18 +9,6 @@ services:
     container_name: redis
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:6379"]
-      interval: 10s
-      timeout: 10s
-      retries: 5
-  mongodb:
-    build: ./mongodb
-    ports:
-      - "27017:27017"
-    env_file:
-      - "./env/mongo.env"
-    container_name: mongodb
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:27017"]
       interval: 10s
       timeout: 10s
       retries: 5
@@ -47,7 +23,6 @@ services:
     container_name: security
     restart: on-failure
     depends_on:
-      - mysql
       - redis
   general:
     build: ./backend/general
@@ -58,7 +33,6 @@ services:
     container_name: general
     restart: on-failure
     depends_on:
-      - mysql
       - redis
   chat:
     build: ./backend/chat
@@ -69,9 +43,7 @@ services:
     container_name: chat
     restart: on-failure
     depends_on:
-      - mysql
       - redis
-      - mongodb
   frontend:
     build: ./frontend
     ports:

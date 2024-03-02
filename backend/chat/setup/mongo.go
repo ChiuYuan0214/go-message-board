@@ -1,25 +1,18 @@
 package setup
 
 import (
-	"chat/constants"
 	"chat/types"
-	"context"
-	"log"
 
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/dynamodb"
 )
 
-type BsonMessage struct{}
+func InitDynamo() *types.DynamoClient {
+	sess := session.Must(session.NewSessionWithOptions(session.Options{Config: aws.Config{
+		Region: aws.String("ap-northeast-3"),
+		// LogLevel:    aws.LogLevel(aws.LogDebugWithHTTPBody),
+	}}))
 
-func InitMongo() *types.MongoClient {
-	client, err := mongo.Connect(context.Background(), options.Client().ApplyURI(
-		"mongodb://"+constants.MONGO_INITDB_ROOT_USERNAME+":"+constants.MONGO_INITDB_ROOT_PASSWORD+
-			"@"+constants.MONGO_IP))
-	if err != nil {
-		log.Fatal(err)
-	}
-	collection := client.Database(constants.MONGO_INITDB_DATABASE).Collection("chats")
-	log.Println("connected to mongodb")
-	return &types.MongoClient{Client: client, ChatHistory: collection}
+	return &types.DynamoClient{DB: dynamodb.New(sess)}
 }

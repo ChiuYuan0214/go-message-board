@@ -37,10 +37,6 @@ func InitMySQL() *sql.DB {
 		pool.SetMaxIdleConns(5)
 		pool.SetConnMaxIdleTime(time.Minute * 30)
 
-		_, err = pool.Exec("SET @@global.time_zone = '+08:00';")
-		if err != nil {
-			log.Println(err)
-		}
 		break
 	}
 

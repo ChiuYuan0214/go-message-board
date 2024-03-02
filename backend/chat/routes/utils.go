@@ -1,7 +1,6 @@
 package routes
 
 import (
-	"log"
 	"net/http"
 
 	"github.com/rs/cors"
@@ -9,15 +8,15 @@ import (
 
 func customLogger(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		log.Print("\n\n\n")
-		log.Println("---------------------------")
-		log.Println("requested URI:", r.RequestURI)
-		log.Print("\n")
-		log.Println("headers:", r.Header)
-		log.Print("\n")
-		log.Println("remote address:", r.RemoteAddr)
-		log.Println("---------------------------")
-		log.Print("\n\n\n")
+		// log.Print("\n\n\n")
+		// log.Println("---------------------------")
+		// log.Println("requested URI:", r.RequestURI)
+		// log.Print("\n")
+		// log.Println("headers:", r.Header)
+		// log.Print("\n")
+		// log.Println("remote address:", r.RemoteAddr)
+		// log.Println("---------------------------")
+		// log.Print("\n\n\n")
 
 		next.ServeHTTP(w, r)
 	})

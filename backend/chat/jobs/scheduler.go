@@ -7,10 +7,10 @@ import (
 
 var chatStore = store.GetChatStore()
 
-var mongo *types.MongoClient
+var dynamo *types.DynamoClient
 
-func UseMongo(mc *types.MongoClient) {
-	mongo = mc
+func UseDynamo(dc *types.DynamoClient) {
+	dynamo = dc
 }
 
 func UseScheduler() {

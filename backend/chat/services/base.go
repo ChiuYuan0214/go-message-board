@@ -8,7 +8,8 @@ import (
 
 var connPool *sql.DB
 var cache *types.RedisCache
-var mongo *types.MongoClient
+
+var dynamo *types.DynamoClient
 var chatStore = store.GetChatStore()
 
 func UsePool(db *sql.DB) {
@@ -19,6 +20,6 @@ func UseCache(redisCache *types.RedisCache) {
 	cache = redisCache
 }
 
-func UseMongo(mc *types.MongoClient) {
-	mongo = mc
+func UseDynamo(dc *types.DynamoClient) {
+	dynamo = dc
 }

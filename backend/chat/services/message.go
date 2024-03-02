@@ -28,7 +28,7 @@ func SendMessage(reqMsg *types.RequestEvent) {
 
 	if towardExist && toward.IsOnline {
 		if !toward.Write(resMsg) {
-			log.Println("failed to send message from %d to %d", from.UserId, toward.UserId)
+			log.Printf("failed to send message from %d to %d", from.UserId, toward.UserId)
 		}
 	}
 }

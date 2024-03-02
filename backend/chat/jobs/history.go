@@ -52,13 +52,16 @@ func syncHistoryJob() {
 			time.Sleep(time.Minute * 15)
 			for _, c := range *clients {
 				client := c
+				if client == nil || client.SendMap == nil {
+					continue
+				}
 				go (*client.SendMap).Sync(func() {
 					for receiverId, msgs := range (*client.SendMap).Store {
-						syncList := []interface{}{}
+						syncList := []types.DynamoChat{}
 						indexList := []int{}
 						for index, msg := range msgs {
 							if !msg.HasSync {
-								syncList = append(syncList, types.Chat{
+								syncList = append(syncList, types.DynamoChat{
 									SenderId: msg.UserId, ReceiverId: msg.TargetUserId,
 									Content: msg.Content, Time: time.Unix(0, msg.Time)})
 								indexList = append(indexList, index)
@@ -67,7 +70,7 @@ func syncHistoryJob() {
 						if len(syncList) == 0 {
 							continue
 						}
-						mongo.BatchInsert(syncList)
+						dynamo.BatchInsert(syncList)
 						for _, index := range indexList {
 							(*client.SendMap).Store[receiverId][index].HasSync = true
 						}

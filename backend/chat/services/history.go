@@ -6,9 +6,6 @@ import (
 	"strconv"
 	"sync"
 	"time"
-
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 func GetHistory(event *types.RequestEvent) {
@@ -67,28 +64,25 @@ func getList(startTime time.Time, endTime time.Time, senderId uint64, receiverId
 	close(channel)
 }
 
-func fetchHistory(senderId uint64, receiverId uint64, endTime time.Time, startTime time.Time) *[]types.Chat {
-	condition := bson.D{
-		{Key: "senderId", Value: senderId},
-		{Key: "receiverId", Value: receiverId},
-		{Key: "time", Value: bson.M{"$lt": endTime, "$gte": startTime}},
+func fetchHistory(senderId uint64, receiverId uint64, endTime time.Time, startTime time.Time) *[]types.DynamoChat {
+	chats, err := dynamo.GetAllWithFilters(senderId, receiverId, startTime, endTime)
+	if err != nil {
+		log.Println(err)
+		return &[]types.DynamoChat{}
 	}
-	opts := options.Find().SetSort(bson.D{{Key: "time", Value: -1}})
-	return mongo.FindAll(condition, opts)
-}
-
-func fetchHistoryLimit20(senderId uint64, receiverId uint64, endTime time.Time) *[]types.Chat {
-	condition := bson.D{
-		{Key: "senderId", Value: senderId},
-		{Key: "receiverId", Value: receiverId},
-		{Key: "time", Value: bson.M{"$lt": endTime}},
-	}
-	opts := options.Find().SetSort(bson.D{{Key: "time", Value: -1}}).SetLimit(20)
-	chats := mongo.FindAll(condition, opts)
 	return chats
 }
 
-func translateMessages(chats *[]types.Chat) *[]types.Message {
+func fetchHistoryLimit20(senderId uint64, receiverId uint64, endTime time.Time) *[]types.DynamoChat {
+	chats, err := dynamo.GetAllWithFilters(senderId, receiverId, time.Now().Add(5), endTime)
+	if err != nil {
+		log.Println(err)
+		return &[]types.DynamoChat{}
+	}
+	return chats
+}
+
+func translateMessages(chats *[]types.DynamoChat) *[]types.Message {
 	dbList := []types.Message{}
 	for _, chat := range *chats {
 		msg := types.Message{UserId: chat.SenderId, TargetUserId: chat.ReceiverId,

@@ -19,7 +19,6 @@ func handleChats(w http.ResponseWriter, r *http.Request) {
 	token := utils.GetTokenFromQuery(r)
 	userId := utils.GetUserIdFromToken(token)
 	actualToken, err := cache.GetToken(userId)
-
 	if err != nil || token != actualToken {
 		log.Println(err)
 		conn.WriteJSON(types.ServerMessage{Event: "error", Content: "token invalid."})

@@ -24,10 +24,9 @@ func main() {
 	routes.UseCache(cache)
 	services.UseCache(cache)
 
-	mongo := setup.InitMongo()
-	defer mongo.Close()
-	services.UseMongo(mongo)
-	jobs.UseMongo(mongo)
+	dynamo := setup.InitDynamo()
+	services.UseDynamo(dynamo)
+	jobs.UseDynamo(dynamo)
 
 	routes.UseConnection()
 	jobs.UseScheduler()

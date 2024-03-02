@@ -1,44 +1,106 @@
 package types
 
 import (
-	"context"
+	"fmt"
 	"log"
+	"time"
 
-	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/service/dynamodb"
+	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
+	"github.com/google/uuid"
 )
 
-type MongoClient struct {
-	Client      *mongo.Client
-	ChatHistory *mongo.Collection
+type DynamoChat struct {
+	SenderId   uint64    `json:"senderId"`
+	ReceiverId uint64    `json:"receiverId"`
+	Content    string    `json:"content"`
+	Time       time.Time `josn:"time"`
 }
 
-func (mc *MongoClient) Close() {
-	if err := mc.Client.Disconnect(context.Background()); err != nil {
-		log.Fatal(err)
+type DynamoClient struct {
+	DB *dynamodb.DynamoDB
+}
+
+func (dc *DynamoClient) GetAllWithFilters(senderId, receiverId uint64, startTime, endTime time.Time) (*[]DynamoChat, error) {
+	filterExpression := "senderId = :senderId AND receiverId = :receiverId AND #time < :endTime"
+
+	expressionAttributeValues := map[string]*dynamodb.AttributeValue{
+		":senderId":   {N: aws.String(fmt.Sprint(senderId))},
+		":receiverId": {N: aws.String(fmt.Sprint(receiverId))},
+		":endTime":    {S: aws.String(endTime.Format(time.RFC3339))},
 	}
-}
 
-func (mc *MongoClient) BatchInsert(list []interface{}) {
-	result, err := mc.ChatHistory.InsertMany(context.Background(), list)
+	expressionAttributeNames := map[string]*string{
+		"#time": aws.String("time"),
+	}
+
+	input := &dynamodb.ScanInput{
+		TableName:                 aws.String("chat-messages"),
+		FilterExpression:          aws.String(filterExpression),
+		ExpressionAttributeValues: expressionAttributeValues,
+		ExpressionAttributeNames:  expressionAttributeNames,
+	}
+
+	if startTime.After(time.Now()) {
+		filterExpression += " AND #time >= :startTime"
+		expressionAttributeValues[":startTime"] = &dynamodb.AttributeValue{S: aws.String(startTime.Format(time.RFC3339))}
+		(*input).Limit = aws.Int64(20)
+	}
+
+	var chats []DynamoChat
+
+	result, err := dc.DB.Scan(input)
 	if err != nil {
-		log.Fatal("error when InsertMany:", err)
+		return &chats, err
 	}
 
-	log.Println("Inserted IDs:", result.InsertedIDs)
+	err = dynamodbattribute.UnmarshalListOfMaps(result.Items, &chats)
+	if err != nil {
+		return &chats, err
+	}
+
+	return &chats, nil
 }
 
-func (mc *MongoClient) FindAll(condition primitive.D, options *options.FindOptions) *[]Chat {
-	cursor, err := mc.ChatHistory.Find(context.Background(), condition, options)
-	if err != nil {
-		log.Fatal("error when Find:", err)
+func (dc *DynamoClient) BatchInsert(chatList []DynamoChat) {
+	for _, chat := range chatList {
+		log.Printf("senderId = %d. receiverId = %d. content = %s. time = %d", chat.SenderId, chat.ReceiverId, chat.Content, chat.Time.Unix())
 	}
-	defer cursor.Close(context.Background())
+	writeRequests := make([]*dynamodb.WriteRequest, len(chatList))
+	for i, chat := range chatList {
+		writeRequests[i] = &dynamodb.WriteRequest{
+			PutRequest: &dynamodb.PutRequest{
+				Item: map[string]*dynamodb.AttributeValue{
+					"chatId": {
+						S: aws.String(uuid.New().String()),
+					},
+					"senderId": {
+						N: aws.String(fmt.Sprint(chat.SenderId)),
+					},
+					"receiverId": {
+						N: aws.String(fmt.Sprint(chat.ReceiverId)),
+					},
+					"content": {
+						S: aws.String(chat.Content),
+					},
+					"time": {
+						S: aws.String(chat.Time.Format(time.RFC3339)),
+					},
+				},
+			},
+		}
+	}
 
-	var chats []Chat
-	if err := cursor.All(context.Background(), &chats); err != nil {
-		log.Fatal("error when cursor.All:", err)
+	input := &dynamodb.BatchWriteItemInput{
+		RequestItems: map[string][]*dynamodb.WriteRequest{
+			"chat-messages": writeRequests,
+		},
 	}
-	return &chats
+
+	output, err := dc.DB.BatchWriteItem(input)
+	if err != nil {
+		log.Println("error when insert into dynamo:", err)
+	}
+	log.Println("insertion output:", output)
 }
