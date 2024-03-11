@@ -1,5 +1,6 @@
 import { addArticle } from "@/api/article";
 import FadeIn from "@/components/animation/FadeIn";
+import { getPrefixTime } from "@/utils/date";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 
@@ -34,13 +35,24 @@ const AddArticleBlock: React.FC<Props> = ({ isEdit, onClose }) => {
     if (!title.trim() || !content.trim()) {
       return setError("標題和內容不可為空");
     }
-    if (new Date(publishTime).getTime() < new Date().getTime() - 60 * 1000) {
-      return setError("發布時間不可為過去時間");
+    let pubTime = publishTime;
+
+    if (
+      !pubTime ||
+      new Date(pubTime).getTime() < new Date().getTime() - 60 * 1000
+    ) {
+      const date = new Date();
+      pubTime = `${date.getFullYear()}-${getPrefixTime(
+        date.getMonth() + 1
+      )}-${getPrefixTime(date.getDate())}T${getPrefixTime(
+        date.getHours()
+      )}:${getPrefixTime(date.getMinutes())}`;
     }
+
     const { status, id, message } = await addArticle({
       title,
       content,
-      publishTime,
+      publishTime: pubTime,
     });
     if (status !== "success") {
       return setError(message || "伺服器異常");

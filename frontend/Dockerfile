@@ -8,6 +8,8 @@ RUN npm install
 
 COPY . .
 
+RUN mkdir ./public
+
 RUN npm run build
 
 FROM node:18.17.0-alpine as release
