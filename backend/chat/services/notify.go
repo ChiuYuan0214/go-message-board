@@ -15,14 +15,14 @@ func NotifyLogin(userId uint64) {
 		if !ok || !follower.IsOnline {
 			continue
 		}
-		follower.Write(types.Notification{Event: "follow-login", UserId: userId})
+		go follower.Write(types.Notification{Event: "follow-login", UserId: userId})
 	}
 	for _, id := range client.FollowList {
 		follow, ok := chatStore.GetClient(id)
 		if !ok || !follow.IsOnline {
 			continue
 		}
-		follow.Write(types.Notification{Event: "follower-login", UserId: userId})
+		go follow.Write(types.Notification{Event: "follower-login", UserId: userId})
 	}
 }
 
@@ -36,13 +36,13 @@ func NotifyLogout(userId uint64) {
 		if !ok || !follower.IsOnline {
 			continue
 		}
-		follower.Write(types.Notification{Event: "follow-logout", UserId: userId})
+		go follower.Write(types.Notification{Event: "follow-logout", UserId: userId})
 	}
 	for _, id := range client.FollowList {
 		follow, ok := chatStore.GetClient(id)
 		if !ok || !follow.IsOnline {
 			continue
 		}
-		follow.Write(types.Notification{Event: "follower-logout", UserId: userId})
+		go follow.Write(types.Notification{Event: "follower-logout", UserId: userId})
 	}
 }

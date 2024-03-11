@@ -2,6 +2,7 @@ package services
 
 import (
 	"fmt"
+	"security/store"
 	"security/utils"
 	"time"
 )
@@ -83,8 +84,15 @@ func ScheduleCodeInvalidation(codeId int64, veriCode *utils.VerificationCode) {
 	}()
 }
 
-func ActivateUser(userId int64) bool {
-	_, err := connPool.Exec("update users set is_active = true where user_id = ?", userId)
+func ActivateUser(userId uint64) bool {
+	user := store.User{UserId: userId}
+	row := connPool.QueryRow(`select u.username, i.file_name from users u 
+	left join images i on i.user_id = u.user_id where u.user_id = ?`, userId)
+	err := row.Scan(&user.UserName, &user.UserImage)
+	if err != nil {
+		store.AddUser(user)
+	}
+	_, err = connPool.Exec("update users set is_active = true where user_id = ?", userId)
 	return err == nil
 }
 

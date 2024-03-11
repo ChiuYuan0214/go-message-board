@@ -45,7 +45,7 @@ const ChatContent: React.FC<Props> = ({ targetId, targetImage, isOpen }) => {
       const isAtTop = listElement.scrollTop === 0;
       if (isAtTop && !isFetching && !isEnd) {
         setIsFetching(true);
-        setTimeout(() => setIsFetching(false), 1500);
+        setTimeout(() => setIsFetching(false), 2000);
         getHistory(targetId);
       }
     }
@@ -60,11 +60,13 @@ const ChatContent: React.FC<Props> = ({ targetId, targetImage, isOpen }) => {
 
   useEffect(() => {
     if (initMap[targetId]) return;
-    if (!dataExist) {
+    if (!messages || messages.length < 10) {
+      setIsFetching(true);
+      setTimeout(() => setIsFetching(false), 2000);
       getHistory(targetId);
       initMap[targetId] = true;
     }
-  }, [dataExist, getHistory, targetId]);
+  }, [messages, getHistory, targetId]);
 
   return (
     <>
@@ -78,7 +80,7 @@ const ChatContent: React.FC<Props> = ({ targetId, targetImage, isOpen }) => {
             )}
             {dataExist && (
               <p className="time">
-                {new Date(messages[0].time / 1e6).toLocaleString()}
+                {new Date(messages[0].time).toLocaleString()}
               </p>
             )}
             {dataExist &&

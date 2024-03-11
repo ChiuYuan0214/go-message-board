@@ -13,11 +13,11 @@ type RedisCache struct {
 	Ctx    context.Context
 }
 
-func (rc *RedisCache) SetToken(userId int64, token Token) error {
-	return rc.Client.Set(rc.Ctx, strconv.FormatInt(userId, 10), token.Token,
+func (rc *RedisCache) SetToken(userId uint64, token Token) error {
+	return rc.Client.Set(rc.Ctx, strconv.FormatUint(userId, 10), token.Token,
 		time.Since(time.Unix(token.ExpireTime, 0))).Err()
 }
 
-func (rc *RedisCache) GetToken(userId int64) (string, error) {
-	return rc.Client.Get(rc.Ctx, strconv.FormatInt(userId, 10)).Result()
+func (rc *RedisCache) GetToken(userId uint64) (string, error) {
+	return rc.Client.Get(rc.Ctx, strconv.FormatUint(userId, 10)).Result()
 }

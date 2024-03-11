@@ -16,7 +16,7 @@ func GetHistory(event *types.RequestEvent) {
 	}
 	endTime := time.Now()
 	if timeInt != 0 {
-		endTime = time.Unix(0, timeInt)
+		endTime = time.Unix(0, timeInt*1000000)
 	}
 	startTime := endTime.Add(-5 * time.Hour)
 	userHisChan := make(chan *[]types.Message)
@@ -39,7 +39,7 @@ func getList(startTime time.Time, endTime time.Time, senderId uint64, receiverId
 	_, clientExist := chatStore.GetClient(senderId)
 	if !clientExist {
 		(*chatStore.Clients)[senderId] = &types.Client{UserId: senderId,
-			SendMap: &types.SendMap{Lock: sync.Mutex{}, Store: map[uint64][]types.Message{}}}
+			SendMap: &types.SendMap{Lock: sync.Mutex{}, Store: sync.Map{}}}
 	}
 
 	sendMap := chatStore.GetSendMap(senderId)
@@ -55,9 +55,9 @@ func getList(startTime time.Time, endTime time.Time, senderId uint64, receiverId
 		if len(*chats) < 10 { // 如果資料不足則抓到最多20筆
 			chats = fetchHistoryLimit20(senderId, receiverId, endTime)
 		}
-		dbList := translateMessages(chats)                                        // 將mongo格式轉換成front-end格式
-		list = append(list, *dbList...)                                           // 將mongo的查詢結果加入給front-end的result
-		sendMap.Store[receiverId] = append(sendMap.Store[receiverId], *dbList...) // 將mongo的查詢結果加入cache
+		dbList := translateMessages(chats)                                                   // 將mongo格式轉換成front-end格式
+		list = append(list, *dbList...)                                                      // 將mongo的查詢結果加入給front-end的result
+		sendMap.Store.Store(receiverId, append(sendMap.GetMessages(receiverId), *dbList...)) // 將mongo的查詢結果加入cache
 	}
 	sendMap.Lock.Unlock()
 	channel <- &list

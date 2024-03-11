@@ -13,10 +13,10 @@ func removeTagsJob() {
 			time.Sleep(time.Hour)
 
 			rows, err := connPool.Query("select tag_id from tags where tag_id not in (select distinct tag_id from article_tag_maps)")
-			defer rows.Close()
 			if err != nil {
 				break
 			}
+			defer rows.Close()
 
 			tagIds := []string{}
 			for rows.Next() {

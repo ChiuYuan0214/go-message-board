@@ -55,11 +55,7 @@ const Profile: NextPage<Props> = ({ mode, userId: paramUserId }) => {
     }
   }, [userId, username, isAuthInit, router, paramUserId]);
 
-  if (
-    !isAuthInit ||
-    (!userId && !paramUserId) ||
-    (paramUserId && !otherUserInfo.userId)
-  )
+  if (!isAuthInit || (!userId && isSelf) || (!isSelf && !otherUserInfo.userId))
     return null;
 
   return (

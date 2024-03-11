@@ -12,7 +12,7 @@ type LoginData struct {
 }
 
 type RefreshData struct {
-	UserId int64  `json:"userId"`
+	UserId uint64 `json:"userId"`
 	Token  string `json:"token"`
 }
 

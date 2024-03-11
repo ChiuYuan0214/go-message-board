@@ -50,6 +50,7 @@ export const onlineFollowListHandler = async (
     ...d,
     isOnline: false,
   }));
+
   data.list.forEach((id: number) => {
     const index = fList.findIndex((f) => f.userId === id);
     if (index >= 0) {
@@ -79,13 +80,21 @@ export const onlineFollowerListHandler = async (
   setter(fList);
 };
 const getListFromHsitory = (data: any) => {
-  data.userHistory.reverse();
-  data.targetHistory.reverse();
+  const userList = data.userHistory.map((d: any) => ({
+    ...d,
+    time: Math.floor(d.time / 1e6),
+  }));
+  const targetList = data.targetHistory.map((d: any) => ({
+    ...d,
+    time: Math.floor(d.time / 1e6),
+  }));
+  userList.reverse();
+  targetList.reverse();
   return mergeSortedList(
-    data.userHistory.map(
+    userList.map(
       (d: any) => new Message(d.userId, d.targetUserId, d.content, d.time)
     ),
-    data.targetHistory.map(
+    targetList.map(
       (d: any) => new Message(d.userId, d.targetUserId, d.content, d.time)
     ),
     (d) => d.time
@@ -102,6 +111,7 @@ export const historyHandler = (
   if (!list.length) {
     endNotifier(receiverId);
   }
+
   return (prev: { [target: number]: Message[] }) => {
     return {
       ...prev,
@@ -123,7 +133,7 @@ export const receiveMessageHandler =
         data.userId,
         data.targetUserId,
         data.content,
-        new Date().getTime()
+        Math.floor(data.time / 1e6)
       ),
     ],
   });

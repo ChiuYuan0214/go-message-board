@@ -8,8 +8,8 @@ import (
 )
 
 type VerifyData struct {
-	UserId int64 `json:"userId"`
-	Code   int32 `json:"code"`
+	UserId uint64 `json:"userId"`
+	Code   int32  `json:"code"`
 }
 
 var verifyMap MethodMapType = map[string]HandlerType{}

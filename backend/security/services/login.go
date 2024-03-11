@@ -9,7 +9,7 @@ import (
 	"github.com/dgrijalva/jwt-go"
 )
 
-func Login(email string, password string) (userId int64, token *types.Token) {
+func Login(email string, password string) (userId uint64, token *types.Token) {
 	var hashedPassword string
 	row := connPool.QueryRow("select user_id, password from users where email = ?", email)
 	row.Scan(&userId, &hashedPassword)
@@ -21,7 +21,7 @@ func Login(email string, password string) (userId int64, token *types.Token) {
 	return userId, token
 }
 
-func GenerateToken(userId int64) *types.Token {
+func GenerateToken(userId uint64) *types.Token {
 	expireTime := time.Now().Add(30 * time.Minute).Unix()
 	claims := jwt.MapClaims{
 		"sub": userId,
@@ -39,7 +39,7 @@ func GenerateToken(userId int64) *types.Token {
 	return &token
 }
 
-func VerifyToken(userId int64, token string) bool {
+func VerifyToken(userId uint64, token string) bool {
 	actualToken, err := cache.GetToken(userId)
 	if err != nil || token != actualToken {
 		return false
@@ -47,7 +47,7 @@ func VerifyToken(userId int64, token string) bool {
 	return true
 }
 
-func GetUserIdFromToken(srcToken string) int64 {
+func GetUserIdFromToken(srcToken string) uint64 {
 	token, err := jwt.Parse(srcToken, func(t *jwt.Token) (interface{}, error) {
 		return []byte(constants.JWT_HS256_SECRET_KEY), nil
 	})
@@ -66,5 +66,5 @@ func GetUserIdFromToken(srcToken string) int64 {
 		return 0
 	}
 
-	return int64(userId)
+	return uint64(userId)
 }

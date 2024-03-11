@@ -38,7 +38,7 @@ func upload(req *http.Request) (res interface{}, statusCode int) {
 	}
 	defer file.Close()
 
-	fileName := fmt.Sprintf("img_%s%s", strconv.FormatInt(userId, 10), filepath.Ext(handler.Filename))
+	fileName := fmt.Sprintf("img_%s%s", strconv.FormatUint(userId, 10), filepath.Ext(handler.Filename))
 	if !utils.UploadFile("images", fileName, file) {
 		return newRes("fail").message("something went wrong."), http.StatusInternalServerError
 	}

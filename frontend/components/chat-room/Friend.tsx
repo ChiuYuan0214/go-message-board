@@ -6,12 +6,14 @@ interface Props {
   data: FType;
   onClick: () => void;
   isOther?: boolean;
+  isSearch?: boolean;
 }
 
 const Friend: React.FC<Props> = ({
   data: { username, userImage, isOnline },
   onClick,
   isOther,
+  isSearch,
 }) => {
   return (
     <>
@@ -20,7 +22,7 @@ const Friend: React.FC<Props> = ({
           <img src={IMAGE_PATH + userImage} alt={userImage} />
         </div>
         <p className="name">{username}</p>
-        {!isOther && (
+        {!isOther && !isSearch && (
           <div className="info">
             <p>{isOnline ? "已上線" : "未上線"}</p>
             <div className="mark"></div>
@@ -37,6 +39,7 @@ const Friend: React.FC<Props> = ({
           display: flex;
           align-items: center;
           border-bottom: 0.5px dotted black;
+          min-width: 200px;
           .image {
             background-color: #000000;
             width: 35px;

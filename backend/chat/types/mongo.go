@@ -3,6 +3,7 @@ package types
 import (
 	"fmt"
 	"log"
+	"sort"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -60,10 +61,14 @@ func (dc *DynamoClient) GetAllWithFilters(senderId, receiverId uint64, startTime
 		return &chats, err
 	}
 
+	sort.Slice(chats, func(i, j int) bool {
+		return chats[i].Time.After(chats[j].Time)
+	})
+
 	return &chats, nil
 }
 
-func (dc *DynamoClient) BatchInsert(chatList []DynamoChat) {
+func (dc *DynamoClient) BatchInsert(chatList []DynamoChat) bool {
 	for _, chat := range chatList {
 		log.Printf("senderId = %d. receiverId = %d. content = %s. time = %d", chat.SenderId, chat.ReceiverId, chat.Content, chat.Time.Unix())
 	}
@@ -101,6 +106,9 @@ func (dc *DynamoClient) BatchInsert(chatList []DynamoChat) {
 	output, err := dc.DB.BatchWriteItem(input)
 	if err != nil {
 		log.Println("error when insert into dynamo:", err)
+	} else {
+		log.Println("insertion output:", output)
 	}
-	log.Println("insertion output:", output)
+
+	return err == nil
 }
