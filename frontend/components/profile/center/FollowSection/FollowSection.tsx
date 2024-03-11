@@ -4,6 +4,7 @@ import { Friend as FType } from "@/models/friend";
 import { chatCtx } from "@/context/chat";
 import Dialog from "@/components/UI/Dialog";
 import { getFollowers, getFollows } from "@/api/follower";
+import SearchBar from "./SearchBar";
 
 interface Props {
   otherUserId: number;
@@ -69,6 +70,7 @@ const FollowSection: React.FC<Props> = ({ otherUserId }) => {
 
   return (
     <>
+      <SearchBar />
       <div className="container">
         <FollowList
           title="追蹤清單"
@@ -92,7 +94,7 @@ const FollowSection: React.FC<Props> = ({ otherUserId }) => {
       <style jsx>{`
         .container {
           display: flex;
-          margin-top: 50px;
+          margin-top: 30px;
           width: 750px;
           padding: 0 2rem;
         }

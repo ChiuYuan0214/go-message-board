@@ -6,7 +6,7 @@ import (
 	"security/utils"
 )
 
-func UpdateColumnsById(data interface{}, id *int64) (string, int) {
+func UpdateColumnsById(data interface{}, id *uint64) (string, int) {
 	cols, args := utils.ConstructParamsFromStruct(data)
 	if cols == "" {
 		return "column name invalid.", http.StatusBadRequest

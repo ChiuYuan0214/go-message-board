@@ -20,13 +20,14 @@ func (mc *MongoClient) Close() {
 	}
 }
 
-func (mc *MongoClient) BatchInsert(list []interface{}) {
+func (mc *MongoClient) BatchInsert(list []interface{}) bool {
 	result, err := mc.ChatHistory.InsertMany(context.Background(), list)
 	if err != nil {
 		log.Fatal("error when InsertMany:", err)
+		return false
 	}
-
 	log.Println("Inserted IDs:", result.InsertedIDs)
+	return true
 }
 
 func (mc *MongoClient) FindAll(condition primitive.D, options *options.FindOptions) *[]Chat {

@@ -1,4 +1,4 @@
-import { GENERAL_IP, SECURITY_IP } from "@/constants/env";
+import { SECURITY_IP } from "@/constants/env";
 import api, { getLocalToken } from "./utils";
 
 interface RegisterBody {

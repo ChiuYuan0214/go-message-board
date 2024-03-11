@@ -12,15 +12,18 @@ func validateHistoryJob() {
 			time.Sleep(time.Minute * 10)
 			for _, client := range *clients {
 				(*client.SendMap).Sync(func() {
-					for receiverId, msgs := range (*client.SendMap).Store {
+					(*client.SendMap).Store.Range(func(key, val any) bool {
+						receiverId := key.(uint64)
+						msgs := val.([]types.Message)
 						newMsgs := []types.Message{}
 						for _, msg := range msgs {
 							if msg.Ref < 3 || !msg.HasSync {
 								newMsgs = append(newMsgs, msg)
 							}
 						}
-						(*client.SendMap).Store[receiverId] = newMsgs
-					}
+						(*client.SendMap).Store.Store(receiverId, newMsgs)
+						return true
+					})
 				})
 			}
 		}
@@ -34,11 +37,13 @@ func incrementHistoryRefJob() {
 			time.Sleep(time.Minute * 3)
 			for _, client := range *clients {
 				(*client.SendMap).Sync(func() {
-					for _, msgs := range (*client.SendMap).Store {
+					(*client.SendMap).Store.Range(func(key, val any) bool {
+						msgs := val.([]types.Message)
 						for _, msg := range msgs {
 							msg.Ref = msg.Ref + 1
 						}
-					}
+						return true
+					})
 				})
 			}
 		}
@@ -52,8 +57,12 @@ func syncHistoryJob() {
 			time.Sleep(time.Minute * 15)
 			for _, c := range *clients {
 				client := c
+				if client == nil || client.SendMap == nil {
+					continue
+				}
 				go (*client.SendMap).Sync(func() {
-					for receiverId, msgs := range (*client.SendMap).Store {
+					(*client.SendMap).Store.Range(func(key, val any) bool {
+						msgs := val.([]types.Message)
 						syncList := []interface{}{}
 						indexList := []int{}
 						for index, msg := range msgs {
@@ -64,14 +73,13 @@ func syncHistoryJob() {
 								indexList = append(indexList, index)
 							}
 						}
-						if len(syncList) == 0 {
-							continue
+						if len(syncList) != 0 && mongo.BatchInsert(syncList) {
+							for _, index := range indexList {
+								msgs[index].HasSync = true
+							}
 						}
-						mongo.BatchInsert(syncList)
-						for _, index := range indexList {
-							(*client.SendMap).Store[receiverId][index].HasSync = true
-						}
-					}
+						return true
+					})
 				})
 			}
 		}

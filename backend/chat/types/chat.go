@@ -10,7 +10,7 @@ import (
 
 type SendMap struct {
 	Lock  sync.Mutex
-	Store map[uint64][]Message
+	Store sync.Map
 }
 
 func (sm *SendMap) Sync(f func()) {
@@ -20,18 +20,22 @@ func (sm *SendMap) Sync(f func()) {
 }
 
 func (sm *SendMap) GetMessages(receiverId uint64) []Message {
-	_, messageExist := sm.Store[receiverId]
+	_, messageExist := sm.Store.Load(receiverId)
 	if !messageExist {
-		sm.Store[receiverId] = []Message{}
+		sm.Store.Store(receiverId, []Message{})
 	}
-	return sm.Store[receiverId]
+	msgs, _ := sm.Store.Load(receiverId)
+	return msgs.([]Message)
 }
 
 func (sm *SendMap) GetCacheMessages(receiverId uint64, startTime time.Time, endTime time.Time) ([]Message, time.Time) {
 	list := []Message{}
 	for _, msg := range sm.GetMessages(receiverId) {
 		msgTime := time.Unix(0, msg.Time)
-		if msgTime.After(endTime) || msgTime.Equal(endTime) || msgTime.Before(startTime) {
+		if msgTime.After(endTime) || msgTime.Equal(endTime) {
+			continue
+		}
+		if msgTime.Before(startTime) {
 			break
 		}
 		list = append(list, msg)
@@ -40,7 +44,7 @@ func (sm *SendMap) GetCacheMessages(receiverId uint64, startTime time.Time, endT
 
 	cacheStartTime := time.Now().Add(1 * time.Minute) // cache最久以前的訊息時間
 	if len(list) > 0 {
-		cacheStartTime = time.Unix(0, list[len(list)-1].Time) // 如果cache list > 0 則回傳
+		cacheStartTime = time.Unix(0, list[len(list)-1].Time) // 如果cache list length > 0 則回傳
 	}
 	return list, cacheStartTime
 }

@@ -5,7 +5,7 @@ import (
 	"security/utils"
 )
 
-func VerifyPasswordByUserId(userId *int64, password *string) bool {
+func VerifyPasswordByUserId(userId *uint64, password *string) bool {
 	var hashedPassword string
 	row := connPool.QueryRow("select password from users where user_id = ? ", *userId)
 	err := row.Scan(&hashedPassword)
@@ -16,7 +16,7 @@ func VerifyPasswordByUserId(userId *int64, password *string) bool {
 	return true
 }
 
-func UpdatePassword(userId *int64, password *string) bool {
+func UpdatePassword(userId *uint64, password *string) bool {
 	hashedPassword, err := utils.HashPassword(*password)
 	if err != nil {
 		return false
@@ -31,7 +31,7 @@ func UpdatePassword(userId *int64, password *string) bool {
 	return count == 1
 }
 
-func InsertProfileImageInfo(userId *int64, fileName *string, desc *string) (string, int) {
+func InsertProfileImageInfo(userId *uint64, fileName *string, desc *string) (string, int) {
 	var count int64
 	var err error
 	row := connPool.QueryRow("select count(user_id) from images where user_id = ?", *userId)
@@ -39,7 +39,6 @@ func InsertProfileImageInfo(userId *int64, fileName *string, desc *string) (stri
 		return "failed to insert image info.", http.StatusInternalServerError
 	}
 
-	// var sqlRes sql.Result
 	if count > 0 {
 		_, err = connPool.Exec("update images set file_name = ?, descript = ? where user_id = ?", *fileName, *desc, *userId)
 	} else {

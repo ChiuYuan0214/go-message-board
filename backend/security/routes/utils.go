@@ -89,7 +89,7 @@ func (res *ResponseMessage) setItem(key string, item interface{}) *ResponseMessa
 	return res
 }
 
-func (res *ResponseMessage) setList(key string, list []interface{}) *ResponseMessage {
+func (res *ResponseMessage) setList(key string, list interface{}) *ResponseMessage {
 	(*res)[key] = list
 	return res
 }
@@ -114,6 +114,10 @@ func isErr(err error) bool {
 	return false
 }
 
-func getUserIdFromContext(req *http.Request) int64 {
-	return req.Context().Value("userId").(int64)
+func getUserIdFromContext(req *http.Request) uint64 {
+	return req.Context().Value("userId").(uint64)
+}
+
+func getParam(req *http.Request, key string) string {
+	return req.URL.Query().Get(key)
 }

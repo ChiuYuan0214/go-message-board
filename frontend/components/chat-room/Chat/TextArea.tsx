@@ -18,10 +18,10 @@ const TextArea: React.FC<Props> = ({ targetId, scroll }) => {
     }
   }, [isSent, scroll]);
 
-  const submitHandler = (e: FormEvent<HTMLFormElement>) => {
+  const submitHandler = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (text === "") return;
-    sendMessage(targetId, text);
+    await sendMessage(targetId, text);
     setText("");
     setIsSent(true);
   };

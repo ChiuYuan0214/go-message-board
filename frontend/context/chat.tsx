@@ -43,7 +43,7 @@ class ChatContext {
   addFollow = (id: number, name: string, image: string) => {};
   removeFollowFromList = (id: number) => {};
   removeFollowerFromList = (id: number) => {};
-  sendMessage = (id: number, content: string) => {};
+  sendMessage = async (id: number, content: string) => {};
   getHistory = (id: number) => {};
 }
 
@@ -102,13 +102,19 @@ export const ChatProvider: React.FC<Props> = ({ children }) => {
   );
 
   const sendMessage = useCallback(
-    (receiverId: number, content: string) => {
+    async (receiverId: number, content: string) => {
+      if (await socket?.isClosed()) {
+        socket?.logout();
+        const newSocket = new Socket(getLocalToken());
+        await newSocket.init(() => setSocket(newSocket));
+      }
+
       socket?.sendMessage(userId, receiverId, content);
       setHistoryMap((prev) => ({
         ...prev,
         [receiverId]: [
           ...(prev[receiverId] || []),
-          new Message(userId, receiverId, content, new Date().getTime() * 1e6),
+          new Message(userId, receiverId, content, new Date().getTime()),
         ],
       }));
     },
@@ -124,7 +130,7 @@ export const ChatProvider: React.FC<Props> = ({ children }) => {
     [historyMap, socket, userId]
   );
 
-  const logout = () => {
+  const logout = useCallback(() => {
     setIsChatOpen(false);
     setFollowList([]);
     setFollowerList([]);
@@ -133,10 +139,10 @@ export const ChatProvider: React.FC<Props> = ({ children }) => {
     setHistoryEndMap({});
     socket?.logout();
     setSocket(null);
-  };
+  }, [socket]);
 
   useEffect(() => {
-    if (!userId || !isAuthInit) {
+    if (!userId || !isAuthInit || !socket) {
       return logout();
     }
     (async () => {
@@ -149,14 +155,15 @@ export const ChatProvider: React.FC<Props> = ({ children }) => {
       if (data.status !== "success") return;
       setFollowerList(data.list.map((d: any) => ({ ...d, isOnline: false })));
     })();
-  }, [userId, isAuthInit]);
+  }, [userId, isAuthInit, socket, logout]);
 
   useEffect(() => {
     if (!userId || !isAuthInit) {
       return;
     }
     const newSocket = new Socket(getLocalToken());
-    setSocket(newSocket);
+    newSocket.init(() => setSocket(newSocket));
+    return () => newSocket.logout();
   }, [userId, isAuthInit]);
 
   useEffect(() => {
@@ -207,7 +214,7 @@ export const ChatProvider: React.FC<Props> = ({ children }) => {
         console.log("error event:", e);
       },
     });
-  }, [socket]);
+  }, [userId, socket]);
 
   useEffect(() => {
     if (!isChatNeedRefresh) return;

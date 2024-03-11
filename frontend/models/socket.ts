@@ -10,15 +10,55 @@ interface Handlers {
 export class Socket {
   private socket: WebSocket | null = null;
   private handlers: Handlers | null = null;
+  private timer: NodeJS.Timeout | null = null;
   constructor(token: string) {
     this.createSocket(token);
   }
 
   private createSocket(token: string) {
     this.socket = new WebSocket(SOCKET_URI + `?token=${token}`);
+    this.timer = setInterval(
+      () => this.socket?.send(JSON.stringify({ type: "ping" })),
+      3000
+    );
+  }
+
+  private async tryState() {
+    let state = 0;
+    const doTry = () =>
+      new Promise<number>((res) => {
+        setTimeout(() => res(this.socket?.readyState || 0), 1000);
+      });
+    while (!state) {
+      state = await doTry();
+    }
+  }
+
+  public async isOpen() {
+    await this.tryState();
+    return this.socket?.readyState === 1;
+  }
+
+  public async isClosed() {
+    await this.tryState();
+
+    return this.socket?.readyState === 3;
+  }
+
+  public async init(callback: () => void) {
+    callback();
+    if (await this.isOpen()) {
+      return true;
+    } else {
+      this.logout();
+      return false;
+    }
   }
 
   public logout() {
+    if (this.timer) {
+      clearTimeout(this.timer);
+    }
     this.socket?.close();
   }
 
@@ -36,7 +76,7 @@ export class Socket {
   }
 
   public refresh(token: string) {
-    this.socket?.close();
+    this.logout();
     this.createSocket(token);
     this.initHandlers(this.handlers!);
   }

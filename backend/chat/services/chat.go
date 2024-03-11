@@ -14,7 +14,7 @@ func InitChatClient(conn *websocket.Conn, userId uint64, token string) {
 	client, exist := (*clients)[userId]
 	if !exist {
 		newClient := &types.Client{UserId: userId, Username: "", Conn: conn, ConnLock: sync.Mutex{},
-			Token: token, IsOnline: true, SendMap: &types.SendMap{Lock: sync.Mutex{}, Store: map[uint64][]types.Message{}}}
+			Token: token, IsOnline: true, SendMap: &types.SendMap{Lock: sync.Mutex{}, Store: sync.Map{}}}
 		(*clients)[userId] = newClient
 	} else {
 		(*client).Conn = conn
@@ -60,6 +60,9 @@ func ListenChatEvent(ctx context.Context, cancel context.CancelFunc, userId uint
 				client.Logout()
 				cancel()
 				return
+			}
+			if msg.Type == "ping" {
+				continue
 			}
 			if msg.UserId != userId {
 				client.Write(types.ServerMessage{Event: "error", Content: "userId incorrect."})
