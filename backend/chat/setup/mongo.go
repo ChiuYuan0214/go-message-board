@@ -13,9 +13,9 @@ import (
 type BsonMessage struct{}
 
 func InitMongo() *types.MongoClient {
-	client, err := mongo.Connect(context.Background(), options.Client().ApplyURI(
-		"mongodb://"+constants.MONGO_INITDB_ROOT_USERNAME+":"+constants.MONGO_INITDB_ROOT_PASSWORD+
-			"@"+constants.MONGO_IP))
+	mongoUri := "mongodb://" + constants.MONGO_INITDB_ROOT_USERNAME + ":" + constants.MONGO_INITDB_ROOT_PASSWORD +
+		"@" + constants.MONGO_IP
+	client, err := mongo.Connect(context.Background(), options.Client().ApplyURI(mongoUri))
 	if err != nil {
 		log.Fatal(err)
 	}

@@ -30,7 +30,7 @@ func (mc *MongoClient) BatchInsert(list []interface{}) bool {
 	return true
 }
 
-func (mc *MongoClient) FindAll(condition primitive.D, options *options.FindOptions) *[]Chat {
+func (mc *MongoClient) FindAll(condition primitive.D, options *options.FindOptions) []Chat {
 	cursor, err := mc.ChatHistory.Find(context.Background(), condition, options)
 	if err != nil {
 		log.Fatal("error when Find:", err)
@@ -41,5 +41,5 @@ func (mc *MongoClient) FindAll(condition primitive.D, options *options.FindOptio
 	if err := cursor.All(context.Background(), &chats); err != nil {
 		log.Fatal("error when cursor.All:", err)
 	}
-	return &chats
+	return chats
 }
