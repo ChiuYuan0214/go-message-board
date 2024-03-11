@@ -8,7 +8,7 @@ export const convertDate = (ISOstr: string) => {
   return `${year}年${month}月${date}日 ${hour}:${minute}`;
 };
 
-const getPrefixTime = (time: number) => {
+export const getPrefixTime = (time: number) => {
   return time < 10 ? "0" + time : time;
 };
 ("2024-02-22T20:51:00Z");
