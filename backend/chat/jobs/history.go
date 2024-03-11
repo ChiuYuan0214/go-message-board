@@ -12,12 +12,13 @@ func validateHistoryJob() {
 			time.Sleep(time.Minute * 10)
 			for _, client := range *clients {
 				(*client.SendMap).Sync(func() {
-					(*client.SendMap).Store.Range(func(key, val any) bool {
+					sendMap := client.SendMap
+					sendMap.Store.Range(func(key, val any) bool {
 						receiverId := key.(uint64)
 						msgs := val.([]types.Message)
 						newMsgs := []types.Message{}
 						for _, msg := range msgs {
-							if msg.Ref < 3 || !msg.HasSync {
+							if sendMap.MapRef < 3 || !msg.HasSync {
 								newMsgs = append(newMsgs, msg)
 							}
 						}
@@ -37,13 +38,7 @@ func incrementHistoryRefJob() {
 			time.Sleep(time.Minute * 3)
 			for _, client := range *clients {
 				(*client.SendMap).Sync(func() {
-					(*client.SendMap).Store.Range(func(key, val any) bool {
-						msgs := val.([]types.Message)
-						for _, msg := range msgs {
-							msg.Ref = msg.Ref + 1
-						}
-						return true
-					})
+					(*client.SendMap).MapRef++
 				})
 			}
 		}

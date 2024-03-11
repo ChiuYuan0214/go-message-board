@@ -16,14 +16,14 @@ type DynamoChat struct {
 	SenderId   uint64    `json:"senderId"`
 	ReceiverId uint64    `json:"receiverId"`
 	Content    string    `json:"content"`
-	Time       time.Time `josn:"time"`
+	Time       time.Time `json:"time"`
 }
 
 type DynamoClient struct {
 	DB *dynamodb.DynamoDB
 }
 
-func (dc *DynamoClient) GetAllWithFilters(senderId, receiverId uint64, startTime, endTime time.Time) (*[]DynamoChat, error) {
+func (dc *DynamoClient) GetAllWithFilters(senderId, receiverId uint64, startTime, endTime time.Time) ([]DynamoChat, error) {
 	filterExpression := "senderId = :senderId AND receiverId = :receiverId AND #time < :endTime"
 
 	expressionAttributeValues := map[string]*dynamodb.AttributeValue{
@@ -53,19 +53,19 @@ func (dc *DynamoClient) GetAllWithFilters(senderId, receiverId uint64, startTime
 
 	result, err := dc.DB.Scan(input)
 	if err != nil {
-		return &chats, err
+		return chats, err
 	}
 
 	err = dynamodbattribute.UnmarshalListOfMaps(result.Items, &chats)
 	if err != nil {
-		return &chats, err
+		return chats, err
 	}
 
 	sort.Slice(chats, func(i, j int) bool {
 		return chats[i].Time.After(chats[j].Time)
 	})
 
-	return &chats, nil
+	return chats, nil
 }
 
 func (dc *DynamoClient) BatchInsert(chatList []DynamoChat) bool {
