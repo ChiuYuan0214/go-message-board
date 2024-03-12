@@ -19,7 +19,7 @@ func updateViewList() {
 
 			list := utils.SortByValue(viewCountMap)
 			cache.Del(constants.VIEW_LIST_NAME)
-			err := cache.RPush(constants.VIEW_LIST_NAME, &list)
+			err := cache.RPush(constants.VIEW_LIST_NAME, list)
 			if err != nil {
 				log.Println(err)
 			}

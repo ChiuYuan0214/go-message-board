@@ -8,22 +8,13 @@ interface Props {
 
 const TextArea: React.FC<Props> = ({ targetId, scroll }) => {
   const [text, setText] = useState("");
-  const [isSent, setIsSent] = useState(true);
   const { sendMessage } = useContext(chatCtx);
-
-  useEffect(() => {
-    if (isSent) {
-      scroll("smooth");
-      setIsSent(false);
-    }
-  }, [isSent, scroll]);
 
   const submitHandler = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (text === "") return;
     await sendMessage(targetId, text);
     setText("");
-    setIsSent(true);
   };
 
   return (

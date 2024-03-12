@@ -30,6 +30,8 @@ const ChatContent: React.FC<Props> = ({ targetId, targetImage, isOpen }) => {
   const messages = historyMap[targetId];
   const isEnd = historyEndMap[targetId];
   const dataExist = messages && messages.length > 0;
+  const prevMsgTime = useRef(0);
+  const lastMsgTime = !dataExist ? 0 : messages[messages.length - 1].time;
 
   const scrollToBottom = useCallback((behavior: "instant" | "smooth") => {
     listRef.current?.parentElement?.scrollTo({
@@ -52,11 +54,12 @@ const ChatContent: React.FC<Props> = ({ targetId, targetImage, isOpen }) => {
   };
 
   useEffect(() => {
-    if (!dataExist) {
+    if (!lastMsgTime) {
       return;
     }
-    scrollToBottom("instant");
-  }, [dataExist, scrollToBottom]);
+    scrollToBottom(prevMsgTime.current == 0 ? "instant" : "smooth");
+    prevMsgTime.current = lastMsgTime;
+  }, [lastMsgTime, scrollToBottom]);
 
   useEffect(() => {
     if (initMap[targetId]) return;

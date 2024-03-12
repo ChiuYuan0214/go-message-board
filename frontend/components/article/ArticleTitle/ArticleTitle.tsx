@@ -47,6 +47,7 @@ const ArticleTitle: React.FC<Props> = ({
             margin-right: auto;
             cursor: pointer;
             overflow-wrap: break-word;
+            max-width: 80%;
           }
           > svg {
             cursor: pointer;

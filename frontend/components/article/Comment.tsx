@@ -86,6 +86,8 @@ const Comment: React.FC<Props> = ({
             }
           }
           .content {
+            max-width: 80%;
+            margin-left: 1rem;
             > p {
               font-size: 0.8rem;
             }
