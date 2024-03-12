@@ -24,7 +24,7 @@ export class Socket {
   }
 
   private async tryState() {
-    let state = 0;
+    let state = this.socket?.readyState;
     const doTry = () =>
       new Promise<number>((res) => {
         setTimeout(() => res(this.socket?.readyState || 0), 1000);

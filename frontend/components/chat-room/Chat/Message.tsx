@@ -36,14 +36,14 @@ const Message: React.FC<Props> = ({ userId, imagePath, targetImage, msg }) => {
           &.isSelf {
             justify-content: flex-end;
             p {
-              background-color: #baa6a6;
+              background-color: #c1d8dc;
             }
           }
           p {
             color: black;
             display: block;
             max-width: 170px;
-            background-color: grey;
+            background-color: #d0cece;
             padding: 0.5rem;
             font-size: 0.8rem;
             border-radius: 5px;
@@ -56,11 +56,11 @@ const Message: React.FC<Props> = ({ userId, imagePath, targetImage, msg }) => {
             border-bottom: 5px solid transparent;
             &.right {
               right: 46px;
-              border-left: 10px solid #baa6a6;
+              border-left: 10px solid #c1d8dc;
             }
             &.left {
               left: 46px;
-              border-right: 10px solid grey;
+              border-right: 10px solid #d0cece;
             }
           }
           .image {

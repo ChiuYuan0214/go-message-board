@@ -44,6 +44,7 @@ export const isTokenValid = () => {
 export const removeLocalToken = () => {
   localStorage.removeItem("token");
   localStorage.removeItem("token-expire");
+  localStorage.removeItem("userId");
   token = "";
   tokenExpire = 0;
 };

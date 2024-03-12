@@ -68,10 +68,11 @@ func updateHotList() {
 			list = append(list, filteredList...)
 			if len(list) == 0 {
 				time.Sleep(30 * time.Minute)
+				continue
 			}
 
 			cache.Del(constants.HOT_LIST_NAMAE)
-			err = cache.RPush(constants.HOT_LIST_NAMAE, &list)
+			err = cache.RPush(constants.HOT_LIST_NAMAE, list)
 			if err != nil {
 				log.Println("error when pushing hot list name:", err)
 			}

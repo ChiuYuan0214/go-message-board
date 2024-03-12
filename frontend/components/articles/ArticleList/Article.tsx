@@ -172,6 +172,7 @@ const Article: React.FC<Props> = ({
             align-items: center;
             h3 {
               margin-right: auto;
+              max-width: 80%;
             }
             > svg {
               cursor: pointer;
@@ -184,6 +185,7 @@ const Article: React.FC<Props> = ({
           }
           .content {
             font-size: 0.85rem;
+            max-width: 90%;
           }
           .votes {
             display: flex;

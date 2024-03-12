@@ -76,9 +76,9 @@ func (rc *RedisCache) ZRange(key string, page, pageSize int64) []string {
 	return res
 }
 
-func (rc *RedisCache) RPush(key string, list *([]string)) error {
+func (rc *RedisCache) RPush(key string, list []string) error {
 	var interfaceList []interface{}
-	for _, item := range *list {
+	for _, item := range list {
 		interfaceList = append(interfaceList, item)
 	}
 	return rc.Client.RPush(rc.Ctx, key, interfaceList...).Err()

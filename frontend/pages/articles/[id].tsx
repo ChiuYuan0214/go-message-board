@@ -119,8 +119,8 @@ const ArticleDetail: NextPage<Props> = (props) => {
           background-color: #dadada;
           .content-block {
             margin-right: 1rem;
+            width: 600px;
             .article {
-              width: 600px;
               padding: 1rem;
               background-color: white;
               color: black;
@@ -132,6 +132,7 @@ const ArticleDetail: NextPage<Props> = (props) => {
                 cursor: pointer;
                 overflow-wrap: break-word;
                 font-size: 0.85rem;
+                max-width: 90%;
               }
             }
           }
