@@ -15,6 +15,8 @@ create table if not exists users (
     update_time datetime default current_timestamp on update current_timestamp
 );
 
+create index users_creation_time_index on users(creation_time);
+
 create table if not exists verification_codes (
     code_id int auto_increment primary key,
     user_id int not null,
@@ -24,6 +26,8 @@ create table if not exists verification_codes (
     expire_time datetime default current_timestamp,
     foreign key (user_id) references users(user_id)
 );
+
+create index verification_codes_creation_time_index on verification_codes(creation_time);
 
 create table if not exists articles (
     article_id int auto_increment primary key,
@@ -38,6 +42,9 @@ create table if not exists articles (
     update_time datetime default current_timestamp on update current_timestamp,
     foreign key (user_id) references users(user_id)
 );
+
+create index articles_user_id_index on articles(user_id);
+create index articles_publish_time_index on articles(publish_time);
 
 create table if not exists tags (
     tag_id int auto_increment primary key,
@@ -63,6 +70,10 @@ create table if not exists comments (
     foreign key (article_id) references articles(article_id)
 );
 
+create index comments_user_id_index on comments(user_id);
+create index comments_article_id_index on comments(article_id);
+create index comments_creation_time_index on comments(creation_time);
+
 create table if not exists votes (
     vote_id int auto_increment primary key,
     user_id int not null,
@@ -73,6 +84,9 @@ create table if not exists votes (
     update_time datetime default current_timestamp on update current_timestamp,
     foreign key (user_id) references users(user_id)
 );
+
+create index votes_user_id_index on votes(user_id);
+create index votes_source_index on votes(source_id, vote_type);
 
 create table if not exists images (
     user_id int primary key,
@@ -96,4 +110,3 @@ create table if not exists collections (
     foreign key (article_id) references articles(article_id),
     primary key (user_id, article_id)
 );
-
