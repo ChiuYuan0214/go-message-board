@@ -18,7 +18,7 @@ func updateHotList() {
             as score, count(distinct c.comment_id) as commentCount from articles a 
             left join comments c on c.article_id = a.article_id 
             where a.publish_time <= now() 
-            group by a.article_id order by a.publish_time desc;
+            group by a.article_id;
 			`)
 			if err != nil {
 				log.Println("failed to query hot list!!!")

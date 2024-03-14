@@ -12,7 +12,7 @@ func removeTagsJob() {
 		for {
 			time.Sleep(time.Hour)
 
-			rows, err := connPool.Query("select tag_id from tags where tag_id not in (select distinct tag_id from article_tag_maps)")
+			rows, err := connPool.Query("select tag_id from tags where tag_id not exists (select tag_id from article_tag_maps)")
 			if err != nil {
 				break
 			}
