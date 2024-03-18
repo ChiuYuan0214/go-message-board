@@ -268,9 +268,13 @@ const Login: NextPage<Props> = ({}) => {
           }
           button {
             cursor: pointer;
-            padding: 0.2rem 1.5rem;
+            padding: 0.5rem 1.5rem;
             margin: 1rem auto 0;
             display: block;
+            background-color: #7c7c7c;
+            outline: none;
+            border-radius: 5px;
+            border: 0px solid transparent;
           }
           .toggle-mode {
             cursor: pointer;

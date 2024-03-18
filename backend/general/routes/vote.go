@@ -1,75 +1,78 @@
 package routes
 
 import (
+	"general/routes/middleware"
 	"general/services"
 	"general/utils"
 	"net/http"
+
+	"github.com/gin-gonic/gin"
 )
 
 type NewVoteData struct {
-	SourceId int64  `json:"sourceId"` // <articleId> | <commentId>
-	Score    int16  `json:"score"`
+	SourceId uint64 `json:"sourceId"` // <articleId> | <commentId>
+	Score    int8   `json:"score"`
 	VoteType string `json:"voteType"` // "article" | "comment"
 }
 
 type UpdateVoteData struct {
-	VoteId int64 `json:"voteId"`
-	Score  int16 `json:"score"`
+	VoteId uint64 `json:"voteId"`
+	Score  int8   `json:"score"`
 }
 
-var voteMap = MethodMapType{}
-
-func init() {
-	voteMap.post(newVote).put(updateVote)
+func initVote(router *gin.Engine) {
+	vh := VoteHandler{}
+	router.POST("/vote", middleware.Auth(), vh.add)
+	router.PUT("/vote", middleware.Auth(), vh.update)
 }
 
-func handleVote(writer http.ResponseWriter, req *http.Request) {
-	setHeader(writer, "json")
-	res, status := voteMap.useHandler(writer, req)
-	DoResponse(res, status, writer)
-}
+type VoteHandler struct{}
 
-func newVote(req *http.Request) (res interface{}, statusCode int) {
-	userId := getUserIdFromContext(req)
+func (vh *VoteHandler) add(c *gin.Context) {
+	val, _ := c.Get("userId")
+	userId := val.(uint64)
 	data := &NewVoteData{}
-	message, status := utils.ParseBody(req.Body, data)
+	message, status := utils.ParseBody(c.Request.Body, data)
 	if message != "" {
-		return newRes("fail").message(message), status
+		c.JSON(status, gin.H{"status": "fail", "message": message})
+		return
 	}
-
 	if data.SourceId == 0 || !utils.ContainsString([]string{"article", "comment"}, data.VoteType) {
-		return newRes("fail").message("sourceId cannot be empty, voteType should be either article or comment."), http.StatusBadRequest
+		c.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": "sourceId cannot be empty, voteType should be either article or comment."})
+		return
 	}
 	if data.Score < -1 || data.Score > 1 {
-		return newRes("fail").message("source can only be 1 or 0 or -1."), http.StatusBadRequest
+		c.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": "source can only be 1 or 0 or -1."})
+		return
 	}
-
 	message, voteIdOrStatus := services.Vote(userId, data.SourceId, data.Score, &data.VoteType)
 	if message != "" {
-		return newRes("fail").message(message), int(voteIdOrStatus)
+		c.JSON(int(voteIdOrStatus), gin.H{"status": "fail", "message": message})
+		return
 	}
-
-	return newRes("success").setId(voteIdOrStatus), http.StatusOK
+	c.JSON(http.StatusOK, gin.H{"status": "success", "id": voteIdOrStatus})
 }
 
-func updateVote(req *http.Request) (res interface{}, statusCode int) {
-	userId := getUserIdFromContext(req)
+func (vh *VoteHandler) update(c *gin.Context) {
+	val, _ := c.Get("userId")
+	userId := val.(uint64)
 	data := &UpdateVoteData{}
-	message, status := utils.ParseBody(req.Body, data)
+	message, status := utils.ParseBody(c.Request.Body, data)
 	if message != "" {
-		return newRes("fail").message(message), status
+		c.JSON(status, gin.H{"status": "fail", "message": message})
+		return
 	}
-
 	if data.VoteId == 0 {
-		return newRes("fail").message("voteId cannot be empty"), http.StatusBadRequest
+		c.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": "voteId cannot be empty"})
+		return
 	}
 	if data.Score < -1 || data.Score > 1 {
-		return newRes("fail").message("source can only be 1 or 0 or -1."), http.StatusBadRequest
+		c.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": "source can only be 1 or 0 or -1."})
+		return
 	}
-
 	if !services.UpdateVote(userId, data.VoteId, data.Score) {
-		return newRes("fail").message("userId or voteId incorrect."), http.StatusBadRequest
+		c.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": "userId or voteId incorrect."})
+		return
 	}
-
-	return newRes("success"), http.StatusOK
+	c.JSON(http.StatusOK, gin.H{"status": "success"})
 }

@@ -25,37 +25,35 @@ func updateTopComments() {
 			}
 
 			// 把這些article的對應comment_id, vote_score查出來
-			stmt := fmt.Sprintf(`
-	        select c.comment_id, c.article_id, sum(v.score) from votes v 
-            inner join comments c on c.comment_id = v.source_id and v.vote_type = 'comment'
-			where c.article_id in (%s) 
-            group by c.comment_id`, strings.Join(list, ", "))
-			rows, err := connPool.Query(stmt)
+			var results []struct {
+				commentId uint64
+				articleId uint64
+				score     uint16
+			}
+			err = db.Table("votes").Select("comments.comment_id, comments.article_id, SUM(votes.score)").
+				Joins("INNER JOIN comments ON comments.comment_id = votes.source_id AND votes.vote_type = 'comment'").
+				Where("comments.article_id IN (?)", strings.Join(list, ", ")).
+				Group("comments.comment_id").
+				Find(&results).Error
 			if err != nil {
-				log.Println("failed to query comment scores!:", err)
+				log.Println(err)
+				time.Sleep(time.Hour)
+				continue
 			}
 
 			// 挑選score總分最高的comment作為top comment
 			commentScoreMap := map[uint64]uint16{}
 			articleCommentMap := map[uint64]uint64{}
-			for rows.Next() {
-				var commentId uint64
-				var articleId uint64
-				var score uint16
-				err := rows.Scan(&commentId, &articleId, &score)
-				if err != nil {
-					log.Println("failed to query comment scores!:", err)
-				}
-
-				prevCommentId, exist := articleCommentMap[articleId]
-				if !exist || score > commentScoreMap[prevCommentId] {
-					commentScoreMap[commentId] = score
-					articleCommentMap[articleId] = commentId
+			for _, e := range results {
+				prevCommentId, exist := articleCommentMap[e.articleId]
+				if !exist || e.score > commentScoreMap[prevCommentId] {
+					commentScoreMap[e.commentId] = e.score
+					articleCommentMap[e.articleId] = e.commentId
 				}
 			}
 
 			for key, val := range articleCommentMap {
-				_, err := connPool.Exec("update articles set top_comment_id = ? where article_id = ?", val, key)
+				err := db.Table("articles").Where("article_id = ?", key).Update("top_comment_id", val).Error
 				if err != nil {
 					log.Println(fmt.Sprintf(`
 					failed to update top comment to commentId %s of articleId %s`,

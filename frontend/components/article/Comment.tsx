@@ -8,7 +8,7 @@ interface Props {
   onDelete: () => void;
 }
 
-const Comment: React.FC<Props> = ({
+const CommentCmp: React.FC<Props> = ({
   data: { userId: commenterId, commenter, commenterImage, title, content },
   hasBorder,
   userId,
@@ -112,4 +112,4 @@ const Comment: React.FC<Props> = ({
   );
 };
 
-export default Comment;
+export default CommentCmp;

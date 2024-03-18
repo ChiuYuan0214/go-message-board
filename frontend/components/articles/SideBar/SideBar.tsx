@@ -25,6 +25,7 @@ const SideBar: React.FC<Props> = ({}) => {
           height: 100vh;
           background-color: ${mainColor};
           @media only screen and (max-width: 650px) {
+            display: none;
             max-width: 650px;
             width: 100%;
             min-height: 300px;

@@ -1,35 +1,43 @@
 package services
 
-import "log"
+import (
+	"general/entities"
+	"log"
+)
 
-func AddFollow(userId int64, followee uint64) bool {
-	var count uint8
-	row := connPool.QueryRow(`select count(user_id) from followers where user_id = ? and follower_id = ?`, followee, userId)
-	row.Scan(&count)
+func AddFollow(userId uint64, followee uint64) bool {
+	var count int64
+	follower := entities.Follower{}
+	err := db.Model(&follower).Where("user_id = ? and follower_id = ?", followee, userId).Count(&count).Error
+	if err != nil {
+		log.Println(err)
+		return false
+	}
 	if count > 0 {
 		return true
 	}
-	sqlRes, err := connPool.Exec(`insert into followers (user_id, follower_id) values (?, ?)`, followee, userId)
+	follower.UserId = followee
+	follower.FollowerId = userId
+	err = db.Create(&follower).Error
 	if err != nil {
 		log.Println(err)
-		return false
 	}
-	_, err = sqlRes.RowsAffected()
 	return err == nil
 }
 
-func RemoveFollow(userId int64, followee uint64) bool {
-	var count uint8
-	row := connPool.QueryRow(`select count(user_id) from followers where user_id = ? and follower_id = ?`, followee, userId)
-	row.Scan(&count)
-	if count == 0 {
-		return true
-	}
-	sqlRes, err := connPool.Exec(`delete from followers where user_id = ? and follower_id = ?`, followee, userId)
+func RemoveFollow(userId uint64, followee uint64) bool {
+	var count int64
+	err := db.Model(&entities.Follower{}).Where("user_id = ? and follower_id = ?", followee, userId).Count(&count).Error
 	if err != nil {
 		log.Println(err)
 		return false
 	}
-	_, err = sqlRes.RowsAffected()
+	if count == 0 {
+		return true
+	}
+	err = db.Where("user_id = ? and follower_id = ?", followee, userId).Delete(&entities.Follower{}).Error
+	if err != nil {
+		log.Println(err)
+	}
 	return err == nil
 }

@@ -2,51 +2,58 @@ package routes
 
 import (
 	"encoding/json"
+	"general/routes/middleware"
 	"general/services"
 	"general/types"
 	"net/http"
+
+	"github.com/gin-gonic/gin"
 )
 
-var followMap = MethodMapType{}
-
-func init() {
-	followMap.post(addFollow).delete(removeFollow)
+func initFollow(router *gin.Engine) {
+	fh := FollowHandler{}
+	router.POST("/follow", middleware.Auth(), fh.add)
+	router.DELETE("/follow", middleware.Auth(), fh.remove)
 }
 
-func handleFollow(writer http.ResponseWriter, req *http.Request) {
-	setHeader(writer, "json")
-	res, status := followMap.useHandler(writer, req)
-	DoResponse(res, status, writer)
-}
+type FollowHandler struct{}
 
-func addFollow(req *http.Request) (res interface{}, statusCode int) {
+func (fh *FollowHandler) add(c *gin.Context) {
 	var data types.FollowData
-	err := json.NewDecoder(req.Body).Decode(&data)
-	userId := getUserIdFromContext(req)
+	err := json.NewDecoder(c.Request.Body).Decode(&data)
+	val, _ := c.Get("userId")
+	userId := val.(uint64)
 	if err != nil {
-		return newRes("fail").message("body format was wrong."), http.StatusBadRequest
+		c.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": "body format was wrong."})
+		return
 	}
 	if userId == 0 || data.Followee == 0 {
-		return newRes("fail").message("userId and followee cannot be empty"), http.StatusBadRequest
+		c.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": "userId and followee cannot be empty"})
+		return
 	}
 	if !services.AddFollow(userId, data.Followee) {
-		return newRes("fail").message("failed to insert data"), http.StatusBadRequest
+		c.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": "failed to insert data"})
+		return
 	}
-	return newRes("success"), http.StatusOK
+	c.JSON(http.StatusOK, gin.H{"status": "success"})
 }
 
-func removeFollow(req *http.Request) (res interface{}, statusCode int) {
+func (fh *FollowHandler) remove(c *gin.Context) {
 	var data types.FollowData
-	err := json.NewDecoder(req.Body).Decode(&data)
-	userId := getUserIdFromContext(req)
+	err := json.NewDecoder(c.Request.Body).Decode(&data)
+	val, _ := c.Get("userId")
+	userId := val.(uint64)
 	if err != nil {
-		return newRes("fail").message("body format was wrong."), http.StatusBadRequest
+		c.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": "body format was wrong."})
+		return
 	}
 	if userId == 0 || data.Followee == 0 {
-		return newRes("fail").message("userId and followee cannot be empty"), http.StatusBadRequest
+		c.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": "userId and followee cannot be empty"})
+		return
 	}
 	if !services.RemoveFollow(userId, data.Followee) {
-		return newRes("fail").message("failed to delete data"), http.StatusBadRequest
+		c.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": "failed to delete data"})
+		return
 	}
-	return newRes("success"), http.StatusOK
+	c.JSON(http.StatusOK, gin.H{"status": "success"})
 }

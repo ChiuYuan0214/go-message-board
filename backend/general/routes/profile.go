@@ -1,41 +1,42 @@
 package routes
 
 import (
+	"general/routes/middleware"
 	"general/services"
 	"general/utils"
 	"net/http"
+
+	"github.com/gin-gonic/gin"
 )
 
-var profileMap = MethodMapType{}
-
-func init() {
-	profileMap.get(getProfile)
+func initProfile(router *gin.Engine) {
+	ph := ProfileHandler{}
+	router.GET("/profile", ph.get)
 }
 
-func handleProfile(writer http.ResponseWriter, req *http.Request) {
-	setHeader(writer, "json")
-	res, status := profileMap.useHandler(writer, req)
-	DoResponse(res, status, writer)
-}
+type ProfileHandler struct{}
 
-func getProfile(req *http.Request) (res interface{}, statusCode int) {
-	userId := getParam(req, "userId")
+func (ph *ProfileHandler) get(c *gin.Context) {
+	userId := middleware.GetUserIdFromHeader(c)
 
-	if userId != "" {
+	if userId != 0 {
 		profile, status := services.GetProfileWithId(userId)
 		if profile != nil {
-			return newRes("success").setItem("data", *profile), status
+			c.JSON(status, gin.H{"status": "success", "data": *profile})
+			return
 		}
 		if status == http.StatusBadRequest {
-			return newRes("fail").message("invalid input."), status
+			c.JSON(status, gin.H{"status": "fail", "message": "invalid input."})
+			return
 		}
-		return newRes("fail").message("something went wrong."), status
+		c.JSON(status, gin.H{"status": "fail", "message": "something went wrong."})
 	}
 
-	id := utils.IsAuth(req)
+	id := utils.IsAuth(c.Request)
 	profile, status := services.GetProfileWithToken(id)
 	if profile != nil {
-		return newRes("success").setItem("data", *profile), status
+		c.JSON(status, gin.H{"status": "success", "data": *profile})
+		return
 	}
-	return newRes("fail").message("something went wrong."), status
+	c.JSON(status, gin.H{"status": "fail", "message": "something went wrong."})
 }

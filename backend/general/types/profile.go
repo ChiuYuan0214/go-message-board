@@ -1,10 +1,10 @@
 package types
 
 type Profile struct {
-	UserId       uint64 `json:"userId"`
+	UserId       uint64 `json:"userId" gorm:"column:user_id"`
 	Username     string `json:"username"`
 	Job          string `json:"job"`
-	IsActive     bool   `json:"isActive"`
+	IsActive     bool   `json:"isActive" gorm:"column:is_active"`
 	ImagePath    string `json:"imagePath"`
 	ArticleCount int32  `json:"articleCount"`
 	CommentCount int32  `json:"commentCount"`

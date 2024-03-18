@@ -2,64 +2,73 @@ package routes
 
 import (
 	"encoding/json"
+	"general/routes/middleware"
 	"general/services"
 	"general/types"
 	"log"
 	"net/http"
+
+	"github.com/gin-gonic/gin"
 )
 
-var collectionMap = MethodMapType{}
-
-func init() {
-	collectionMap.get(getCollections).post(addCollection).delete(removeCollection)
+func initCollections(router *gin.Engine) {
+	ch := CollectionsHandler{}
+	router.GET("/collections", middleware.Auth(), ch.get)
+	router.POST("/collections", middleware.Auth(), ch.add)
+	router.DELETE("/collections", middleware.Auth(), ch.delete)
 }
 
-func handleCollection(writer http.ResponseWriter, req *http.Request) {
-	setHeader(writer, "json")
-	res, status := collectionMap.useHandler(writer, req)
-	DoResponse(res, status, writer)
-}
+type CollectionsHandler struct{}
 
-func getCollections(req *http.Request) (res interface{}, statusCode int) {
-	userId := getUserIdFromContext(req)
-	page, size := getPageSize(req)
+func (ch *CollectionsHandler) get(c *gin.Context) {
+	val, _ := c.Get("userId")
+	userId := val.(uint64)
+	page, size := getPageSize(c.Request)
 	if userId == 0 {
-		return newRes("fail").message("userId not valid."), http.StatusBadRequest
+		c.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": "userId not valid."})
+		return
 	}
 	data := services.GetCollections(userId, page, size)
-	return newRes("success").setList("list", data), http.StatusOK
+	c.JSON(http.StatusOK, gin.H{"status": "success", "list": data})
 }
 
-func addCollection(req *http.Request) (res interface{}, statusCode int) {
-	userId := getUserIdFromContext(req)
-
+func (ch *CollectionsHandler) add(c *gin.Context) {
+	val, _ := c.Get("userId")
+	userId := val.(uint64)
 	var body types.WriteCollectionData
-	err := json.NewDecoder(req.Body).Decode(&body)
+	err := json.NewDecoder(c.Request.Body).Decode(&body)
 	if err != nil {
 		log.Println(err)
-		return newRes("fail").message("body format was wrong."), http.StatusBadRequest
+		c.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": "body format was wrong."})
+		return
 	}
 	if userId == 0 || body.ArticleId == 0 {
-		return newRes("fail").message("userId and articleId cannot be empty."), http.StatusBadRequest
+		c.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": "userId and articleId cannot be empty."})
+		return
 	}
 	if !services.AddCollection(userId, body.ArticleId) {
-		return newRes("fail").message("failed to add collection."), http.StatusInternalServerError
+		c.JSON(http.StatusInternalServerError, gin.H{"status": "fail", "message": "failed to add collection."})
+		return
 	}
-	return newRes("success"), http.StatusOK
+	c.JSON(http.StatusOK, gin.H{"status": "success"})
 }
 
-func removeCollection(req *http.Request) (res interface{}, statusCode int) {
-	userId := getUserIdFromContext(req)
+func (ch *CollectionsHandler) delete(c *gin.Context) {
+	val, _ := c.Get("userId")
+	userId := val.(uint64)
 	var body types.WriteCollectionData
-	err := json.NewDecoder(req.Body).Decode(&body)
+	err := json.NewDecoder(c.Request.Body).Decode(&body)
 	if err != nil {
-		return newRes("fail").message("body format was wrong."), http.StatusBadRequest
+		c.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": "body format was wrong."})
+		return
 	}
 	if userId == 0 || body.ArticleId == 0 {
-		return newRes("fail").message("userId and articleId cannot be empty."), http.StatusBadRequest
+		c.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": "userId and articleId cannot be empty."})
+		return
 	}
 	if !services.RemoveCollection(userId, body.ArticleId) {
-		return newRes("fail").message("failed to remove collection."), http.StatusInternalServerError
+		c.JSON(http.StatusInternalServerError, gin.H{"status": "fail", "message": "failed to remove collection."})
+		return
 	}
-	return newRes("success"), http.StatusOK
+	c.JSON(http.StatusOK, gin.H{"status": "success"})
 }

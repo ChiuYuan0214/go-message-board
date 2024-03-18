@@ -1,7 +1,6 @@
 package services
 
 import (
-	"database/sql"
 	"fmt"
 	"general/constants"
 	"general/types"
@@ -28,71 +27,66 @@ var baseStmt = `
 	where a.publish_time <= now() `
 
 // get by newest (default)
-func GetNewestList(page, size, userId int64) *[]types.ArticleListData {
-	data := &[]types.ArticleListData{}
+func GetNewestList(page, size int64, userId uint64) []types.ArticleListData {
+	data := []types.ArticleListData{}
 	start := (page - 1) * size
 	stmt := baseStmt + `order by a.publish_time desc, a.article_id desc limit ? offset ?`
-
-	rows, err := connPool.Query(stmt, userId, userId, size, start)
+	err := db.Raw(stmt, userId, userId, size, start).Find(&data).Error
 	if err != nil {
-		log.Println("error when getting newest list:", err)
-		return data
+		log.Println(err)
 	}
 
-	return translate(rows, data)
+	return data
 }
 
-func GetViewList(page, size, userId int64) *[]types.ArticleListData {
+func GetViewList(page, size int64, userId uint64) []types.ArticleListData {
 	list := cache.LRange(constants.VIEW_LIST_NAME, page, size)
-	data := &[]types.ArticleListData{}
+	data := []types.ArticleListData{}
 	if len(list) == 0 || page < 1 || size < 1 {
 		return data
 	}
 
 	listStr := strings.Join(list, ", ")
 	stmt := fmt.Sprintf(baseStmt+`and a.article_id in (%s)`, listStr)
-	rows, err := connPool.Query(stmt, userId, userId)
+	err := db.Raw(stmt, userId, userId).Find(&data).Error
 	if err != nil {
-		log.Println("error when getting view list:", err)
-		return data
+		log.Println(err)
 	}
-	data = translate(rows, data)
 	return sortByOrder(data, list)
 }
 
-func GetHotList(page, size, userId int64) *[]types.ArticleListData {
+func GetHotList(page, size int64, userId uint64) []types.ArticleListData {
 	list := cache.LRange(constants.HOT_LIST_NAMAE, page, size)
-	data := &[]types.ArticleListData{}
+	data := []types.ArticleListData{}
 	if len(list) == 0 || page < 1 || size < 1 {
 		return data
 	}
-
 	listStr := strings.Join(list, ", ")
 	stmt := fmt.Sprintf(baseStmt+`and a.article_id in (%s)`, listStr)
-	rows, err := connPool.Query(stmt, userId, userId)
+	err := db.Raw(stmt, userId, userId).Find(&data).Error
 	if err != nil {
-		log.Println("error when getting hot list:", err)
-		return data
+		log.Println(err)
 	}
-	data = translate(rows, data)
+
 	return sortByOrder(data, list)
 }
 
-func GetProfileList(page, size, userId int64, selfUserId int64) *[]types.ArticleListData {
-	data := &[]types.ArticleListData{}
+func GetProfileList(page, size int64, userId uint64, selfUserId uint64) []types.ArticleListData {
+	data := []types.ArticleListData{}
 	start := (page - 1) * size
-	rows, err := connPool.Query(baseStmt+
-		`and a.user_id = ? order by a.publish_time desc, a.article_id desc limit ? offset ?`, selfUserId, selfUserId, userId, size, start)
+	err := db.Raw(baseStmt+
+		`and a.user_id = ? order by a.publish_time desc, 
+		a.article_id desc limit ? offset ?`, selfUserId, selfUserId, userId, size, start).
+		Scan(&data).Error
 	if err != nil {
-		log.Println("error when getting profile list:", err)
-		return data
+		log.Println(err)
 	}
-	return translate(rows, data)
+	return data
 }
 
-func GetTagList(page, size int64, tag string) *[]types.ArticleListData {
-	data := &[]types.ArticleListData{}
-	rows, err := connPool.Query(`
+func GetTagList(page, size int64, tag string) []types.ArticleListData {
+	data := []types.ArticleListData{}
+	err := db.Raw(`
 	select a.article_id, a.user_id, a.title, a.content, a.top_comment_id,
     coalesce((select count(vote_id) from votes 
     where source_id = a.article_id and vote_type = 'article' and score = 1 group by source_id), 0) as voteUp, 
@@ -100,107 +94,39 @@ func GetTagList(page, size int64, tag string) *[]types.ArticleListData {
     where source_id = a.article_id and vote_type = 'article' and score = -1 group by source_id), 0) as voteDown, update_time 
     from articles a 
     inner join article_tag_maps m on m.article_id = a.article_id inner join tags t on m.tag_id = t.tag_id and t.name = ?
-	`, tag)
+	`, tag).Find(&data).Error
 	if err != nil {
-		log.Println("error when getting profile list:", err)
-		return data
+		log.Println(err)
 	}
-	return translate(rows, data)
-}
-
-func translate(rows *sql.Rows, data *[]types.ArticleListData) *[]types.ArticleListData {
-	idList := []string{}
-	for rows.Next() {
-		var article types.ArticleListData
-		var userImage sql.NullString
-		var commentTitle sql.NullString
-		var commentContent sql.NullString
-		var commentUser sql.NullString
-		var commentUserImage sql.NullString
-		err := rows.Scan(
-			&article.ArticleId, &article.UserId, &article.Title, &article.Content, &article.Author, &userImage,
-			&article.VoteUp, &article.VoteDown, &article.MyScore, &article.HasCollec, &commentTitle,
-			&commentContent, &commentUser, &commentUserImage, &article.PublishTime)
-		if err != nil {
-			log.Println(err)
-		}
-		if userImage.Valid {
-			val, err := userImage.Value()
-			if err != nil {
-				log.Println(err)
-			} else {
-				article.AuthorImage = val.(string)
-			}
-		}
-		if commentTitle.Valid {
-			val, err := commentTitle.Value()
-			if err != nil {
-				log.Println(err)
-			} else {
-				article.CommentTitle = val.(string)
-			}
-		}
-		if commentContent.Valid {
-			val, err := commentContent.Value()
-			if err != nil {
-				log.Println(err)
-			} else {
-				article.CommentContent = val.(string)
-			}
-		}
-		if commentUser.Valid {
-			val, err := commentUser.Value()
-			if err != nil {
-				log.Println(err)
-			} else {
-				article.CommentUser = val.(string)
-			}
-		}
-		if commentUserImage.Valid {
-			val, err := commentUserImage.Value()
-			if err != nil {
-				log.Println(err)
-			} else {
-				article.CommentUserImage = val.(string)
-			}
-		}
-
-		article.Tags = []string{}
-		*data = append(*data, article)
-		idList = append(idList, strconv.FormatUint(article.ArticleId, 10))
-	}
-
-	setTags(data, idList)
 	return data
 }
 
 // set tags of each article
-func setTags(data *[]types.ArticleListData, idList []string) {
+func setTags(data []types.ArticleListData, idList []string) {
 	if len(idList) == 0 {
 		return
 	}
-	stmt := fmt.Sprintf(`
-	select article_id, name from tags 
-	inner join article_tag_maps atm 
-	on atm.tag_id = tags.tag_id 
-	where atm.article_id in (%s)`, strings.Join(idList, ", "))
-	rows, err := connPool.Query(stmt)
+	var tags []struct {
+		ArticleId uint64
+		Name      string
+	}
+
+	err := db.Table("tags").
+		Select("article_id, name").
+		Joins("INNER JOIN article_tag_maps ON article_tag_maps.tag_id = tags.tag_id").
+		Where("article_tag_maps.article_id IN (?)", idList).
+		Scan(&tags).Error
 	if err != nil {
-		log.Println("error when get tags:", err)
+		log.Println(err)
+		return
 	}
 
 	articleTagsMap := map[uint64][]string{}
-	for rows.Next() {
-		var articleId uint64
-		var tagName string
-		err := rows.Scan(&articleId, &tagName)
-		if err != nil {
-			log.Println(err)
-		}
-		articleTagsMap[articleId] = append(articleTagsMap[articleId], tagName)
+	for _, tag := range tags {
+		articleTagsMap[tag.ArticleId] = append(articleTagsMap[tag.ArticleId], tag.Name)
 	}
 
-	for _, art := range *data {
+	for _, art := range data {
 		tagNames, exist := articleTagsMap[art.ArticleId]
 		if exist {
 			art.Tags = tagNames
@@ -208,7 +134,7 @@ func setTags(data *[]types.ArticleListData, idList []string) {
 	}
 }
 
-func sortByOrder(data *[]types.ArticleListData, orderList []string) *[]types.ArticleListData {
+func sortByOrder(data []types.ArticleListData, orderList []string) []types.ArticleListData {
 	orderMap := map[uint64]int{}
 	for i, v := range orderList {
 		id, err := strconv.ParseUint(v, 10, 64)
@@ -219,15 +145,15 @@ func sortByOrder(data *[]types.ArticleListData, orderList []string) *[]types.Art
 	}
 
 	sortedData := make([]types.ArticleListData, len(orderList))
-	for _, a := range *data {
+	for _, a := range data {
 		index := orderMap[a.ArticleId]
 		sortedData[index] = a
 	}
 
-	compressed := &[]types.ArticleListData{}
+	compressed := []types.ArticleListData{}
 	for _, d := range sortedData {
 		if d.ArticleId != 0 {
-			*compressed = append(*compressed, d)
+			compressed = append(compressed, d)
 		}
 	}
 

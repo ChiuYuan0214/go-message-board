@@ -1,26 +1,28 @@
 package routes
 
 import (
-	"database/sql"
-	"net/http"
+	"general/routes/middleware"
+
+	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
-var connPool *sql.DB
+var db *gorm.DB
 
-func UsePool(db *sql.DB) {
-	connPool = db
+func UsePool(DB *gorm.DB) {
+	db = DB
 }
 
-func UseDispatcher() {
-	http.HandleFunc("/article", handleArticle)
-	http.HandleFunc("/articles", handleArticles)
-	http.HandleFunc("/comment", authMiddle(handleComment))
-	http.HandleFunc("/comments", handleComments)
-	http.HandleFunc("/profile", handleProfile)
-	http.HandleFunc("/vote", authMiddle(handleVote))
-	http.HandleFunc("/view", handleView)
-	http.HandleFunc("/follow", authMiddle(handleFollow))
-	http.HandleFunc("/follower", handleFollower)
-	http.HandleFunc("/follows", handleFollows)
-	http.HandleFunc("/collections", authMiddle(handleCollection))
+func InitRouter(router *gin.Engine) {
+	router.Use(middleware.Cors)
+	initArticle(router)
+	initArticles(router)
+	initComment(router)
+	initComments(router)
+	initProfile(router)
+	initCollections(router)
+	initVote(router)
+	initView(router)
+	initFollow(router)
+	initFollower(router)
 }

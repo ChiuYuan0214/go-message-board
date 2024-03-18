@@ -10,7 +10,7 @@ import (
 	"github.com/dgrijalva/jwt-go"
 )
 
-func IsAuth(req *http.Request) int64 {
+func IsAuth(req *http.Request) uint64 {
 	authHeader := req.Header.Get("Authorization")
 	if authHeader == "" {
 		return 0
@@ -45,7 +45,7 @@ func ParseBody(body io.ReadCloser, containerAddr interface{}) (string, int) {
 	return "", 0
 }
 
-func GetUserIdFromToken(srcToken string) int64 {
+func GetUserIdFromToken(srcToken string) uint64 {
 	token, err := jwt.Parse(srcToken, func(t *jwt.Token) (interface{}, error) {
 		return []byte(constants.JWT_HS256_SECRET_KEY), nil
 	})
@@ -64,5 +64,5 @@ func GetUserIdFromToken(srcToken string) int64 {
 		return 0
 	}
 
-	return int64(userId)
+	return uint64(userId)
 }

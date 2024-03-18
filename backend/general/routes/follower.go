@@ -5,41 +5,44 @@ import (
 	"general/services"
 	"general/types"
 	"net/http"
+
+	"github.com/gin-gonic/gin"
 )
 
-var followerMap = MethodMapType{}
-
-func init() {
-	followerMap.delete(authMethod(removeFollower)).get(getFollowers)
+func initFollower(router *gin.Engine) {
+	fh := FollowerHandler{}
+	router.GET("/follower", fh.get)
+	router.DELETE("/follower", fh.remove)
 }
 
-func handleFollower(writer http.ResponseWriter, req *http.Request) {
-	setHeader(writer, "json")
-	res, status := followerMap.useHandler(writer, req)
-	DoResponse(res, status, writer)
-}
+type FollowerHandler struct{}
 
-func removeFollower(req *http.Request) (res interface{}, statusCode int) {
+func (fh *FollowerHandler) remove(c *gin.Context) {
 	var data types.FollowerData
-	userId := getUserIdFromContext(req)
-	err := json.NewDecoder(req.Body).Decode(&data)
+	val, _ := c.Get("userId")
+	userId := val.(uint64)
+	err := json.NewDecoder(c.Request.Body).Decode(&data)
 	if err != nil {
-		return newRes("fail").message("body format was wrong."), http.StatusBadRequest
+		c.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": "body format was wrong."})
+		return
 	}
 	if userId == 0 || data.Follower == 0 {
-		return newRes("fail").message("userId and follower cannot be empty"), http.StatusBadRequest
+		c.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": "userId and follower cannot be empty"})
+		return
 	}
 	if !services.RemoveFollower(userId, data.Follower) {
-		return newRes("fail").message("failed to delete data"), http.StatusBadRequest
+		c.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": "failed to delete data"})
+		return
 	}
-	return newRes("success"), http.StatusOK
+	c.JSON(http.StatusOK, gin.H{"status": "success"})
 }
 
-func getFollowers(req *http.Request) (res interface{}, statusCode int) {
-	userId := getUserIdFromQuery(req)
+func (fh *FollowerHandler) get(c *gin.Context) {
+	userId := getUserIdFromQuery(c.Request)
 	if userId == 0 {
-		return newRes("fail").message("userId not valid."), http.StatusBadRequest
+		c.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": "userId not valid."})
+		return
 	}
 	data := services.GetFollowers(userId)
-	return newRes("success").setList("list", *data), http.StatusOK
+	c.JSON(http.StatusOK, gin.H{"status": "success", "list": data})
 }

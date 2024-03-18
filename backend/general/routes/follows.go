@@ -3,25 +3,16 @@ package routes
 import (
 	"general/services"
 	"net/http"
+
+	"github.com/gin-gonic/gin"
 )
 
-var followsMap = MethodMapType{}
-
-func init() {
-	followsMap.get(getFollows)
-}
-
-func handleFollows(writer http.ResponseWriter, req *http.Request) {
-	setHeader(writer, "json")
-	res, status := followsMap.useHandler(writer, req)
-	DoResponse(res, status, writer)
-}
-
-func getFollows(req *http.Request) (res interface{}, statusCode int) {
-	userId := getUserIdFromQuery(req)
+func getFollows(c *gin.Context) {
+	userId := getUserIdFromQuery(c.Request)
 	if userId == 0 {
-		return newRes("fail").message("userId not valid."), http.StatusBadRequest
+		c.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": "userId not valid."})
+		return
 	}
 	data := services.GetFollows(userId)
-	return newRes("success").setList("list", *data), http.StatusOK
+	c.JSON(http.StatusOK, gin.H{"status": "success", "list": data})
 }

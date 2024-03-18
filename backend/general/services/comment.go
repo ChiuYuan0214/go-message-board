@@ -1,8 +1,8 @@
 package services
 
 import (
-	"fmt"
 	"general/constants"
+	"general/entities"
 	"general/types"
 	"log"
 	"net/http"
@@ -10,29 +10,27 @@ import (
 	"strings"
 )
 
-func AddComment(userId int64, data *types.AddCommentData) int64 {
-	row := connPool.QueryRow("select count(article_id) from articles where article_id = ?", data.ArticleId)
-	var count int
-	if err := row.Scan(&count); err != nil || count < 1 {
+func AddComment(userId uint64, data *types.AddCommentData) uint64 {
+	var count int64
+	err := db.Model(&types.Article{}).Where("article_id = ?", data.ArticleId).Count(&count).Error
+	if err != nil || count < 1 {
 		return 0
 	}
-	sqlRes, err := connPool.Exec("insert into comments (user_id, article_id, title, content) values (?, ?, ?, ?)", userId, data.ArticleId, data.Title, data.Content)
-	if err != nil {
-		log.Println("err of inserting comment:", err)
+	newComment := entities.Comment{UserId: userId, ArticleId: data.ArticleId, Title: data.Title, Content: data.Content}
+	result := db.Create(&newComment)
+	if result.Error != nil {
+		log.Println("err of inserting comment:", result.Error)
 		return 0
 	}
-	commentId, _ := sqlRes.LastInsertId()
 
 	recordArticle(data.ArticleId)
 
-	return commentId
+	return newComment.CommentId
 }
 
-func UpdateComment(userId int64, data *types.UpdateCommentData) (string, int) {
-	row := connPool.QueryRow("select user_id from comments where comment_id = ?", data.CommentId)
-
-	var actualUserId int64
-	err := row.Scan(&actualUserId)
+func UpdateComment(userId uint64, data *types.UpdateCommentData) (string, int) {
+	var actualUserId uint64
+	err := db.Model(&entities.Comment{}).Where("comment_id = ?", data.CommentId).Scan(&actualUserId).Error
 	if err != nil {
 		return "something went wrong.", http.StatusInternalServerError
 	}
@@ -41,24 +39,19 @@ func UpdateComment(userId int64, data *types.UpdateCommentData) (string, int) {
 		return "user incorrect.", http.StatusBadRequest
 	}
 
-	isEdited := false
-	stmt := "update comments set "
+	newComment := entities.Comment{CommentId: data.CommentId, Title: data.Title, Content: data.Content}
+	fields := map[string]string{}
 	if strings.Trim(data.Title, " ") != "" {
-		stmt += fmt.Sprintf(" title = '%s', ", data.Title)
-		isEdited = true
+		fields["title"] = data.Title
 	}
-
 	if strings.Trim(data.Content, " ") != "" {
-		stmt += fmt.Sprintf(" content = '%s', ", data.Content)
-		isEdited = true
+		fields["content"] = data.Content
 	}
-
-	if !isEdited {
+	if len(fields) == 0 {
 		return "nothing to update.", http.StatusBadRequest
 	}
 
-	stmt += "edited = true where comment_id = ?"
-	_, err = connPool.Exec(stmt, data.CommentId)
+	err = db.Model(newComment).Updates(fields).Error
 	if err != nil {
 		return "something went wrong", http.StatusInternalServerError
 	}
@@ -66,10 +59,9 @@ func UpdateComment(userId int64, data *types.UpdateCommentData) (string, int) {
 	return "", 0
 }
 
-func DeleteComment(userId int64, commentId string) (string, int) {
-	row := connPool.QueryRow("select user_id from comments where comment_id = ?", commentId)
-	var actualUserId int64
-	err := row.Scan(&actualUserId)
+func DeleteComment(userId uint64, commentId string) (string, int) {
+	var actualUserId uint64
+	err := db.Model(&entities.Comment{}).Select("user_id").Where("comment_id = ?", commentId).Scan(&actualUserId).Error
 	if err != nil {
 		return "something went wrong.", http.StatusInternalServerError
 	}
@@ -78,13 +70,13 @@ func DeleteComment(userId int64, commentId string) (string, int) {
 	}
 
 	// delete related votes
-	_, err = connPool.Exec("delete from votes where vote_type = 'comment' and source_id = ?", commentId)
+	err = db.Where("vote_type = 'comment' and source_id = ?", commentId).Delete(&entities.Vote{}).Error
 	if err != nil {
 		return "something went wrong.", http.StatusInternalServerError
 	}
 
 	// delete comment
-	_, err = connPool.Exec("delete from comments where comment_id = ?", commentId)
+	err = db.Where("comment_id = ?", commentId).Delete(&entities.Comment{}).Error
 	if err != nil {
 		return "something went wrong.", http.StatusInternalServerError
 	}
@@ -92,7 +84,7 @@ func DeleteComment(userId int64, commentId string) (string, int) {
 	return "", 0
 }
 
-func recordArticle(articleId int64) error {
-	id := strconv.FormatInt(articleId, 10)
+func recordArticle(articleId uint64) error {
+	id := strconv.FormatUint(articleId, 10)
 	return cache.SAdd(constants.COMMENTED_ARTICLE_SET, id)
 }

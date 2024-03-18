@@ -26,7 +26,7 @@ func (sm *SendMap) GetMessages(receiverId uint64) []Message {
 		sm.Store.Store(receiverId, []Message{})
 	}
 	msgs, _ := sm.Store.Load(receiverId)
-	// log.Println("msgs loaded from cache: ", msgs)
+
 	return msgs.([]Message)
 }
 

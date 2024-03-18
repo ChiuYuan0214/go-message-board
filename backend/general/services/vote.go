@@ -1,26 +1,27 @@
 package services
 
 import (
-	"database/sql"
+	"general/entities"
+	"general/types"
 	"log"
 	"net/http"
 )
 
-func Vote(userId int64, sourceId int64, score int16, voteType *string) (string, int64) {
-	var row *sql.Row
+func Vote(userId, sourceId uint64, score int8, voteType *string) (string, uint64) {
+	var count int64
+	var err error
 	if *voteType == "article" {
-		row = connPool.QueryRow("select count(*) from articles where article_id = ?", sourceId)
+		err = db.Model(&types.Article{}).Where("article_id = ?", sourceId).Count(&count).Error
 	} else {
-		row = connPool.QueryRow("select count(*) from comments where comment_id = ?", sourceId)
+		err = db.Model(&entities.Comment{}).Where("comment_id = ?", sourceId).Count(&count).Error
 	}
-
-	var count int
-	var voteId int64
-	if err := row.Scan(&count); err != nil || count == 0 {
+	if err != nil || count == 0 {
 		return "source not exist", http.StatusBadRequest
 	}
-	row = connPool.QueryRow("select vote_id from votes where user_id = ? and source_id = ?", userId, sourceId)
-	if err := row.Scan(&voteId); err == nil {
+
+	var voteId uint64
+	err = db.Model(&entities.Vote{}).Select("vote_id").Where("user_id = ? and source_id = ?", userId, sourceId).Error
+	if err == nil {
 		if UpdateVote(userId, voteId, score) {
 			return "", voteId
 		} else {
@@ -28,33 +29,32 @@ func Vote(userId int64, sourceId int64, score int16, voteType *string) (string, 
 		}
 	}
 
-	sqlRes, err := connPool.Exec("insert into votes (user_id, source_id, score, vote_type) values (?, ?, ?, ?)", userId, sourceId, score, *voteType)
-	if err != nil {
-		log.Println(err)
+	newVote := entities.Vote{UserId: userId, SourceId: sourceId, Score: score, VoteType: *voteType}
+	result := db.Create(&newVote)
+	if result.Error != nil {
+		log.Println(result.Error)
 		return "failed to execute query", http.StatusInternalServerError
 	}
 
-	id, _ := sqlRes.LastInsertId()
-	return "", id
+	return "", newVote.VoteId
 }
 
-func UpdateVote(userId int64, voteId int64, score int16) bool {
-	row := connPool.QueryRow("select user_id, score from votes where vote_id = ?", voteId)
-	var actualUserId int64
-	var prevScore int16
-	err := row.Scan(&actualUserId, &prevScore)
-	if err != nil {
-		log.Println(err)
+func UpdateVote(userId, voteId uint64, score int8) bool {
+	vote := entities.Vote{}
+	var curVote struct {
+		userId uint64 `gorm:"column:user_id"`
+		score  int8
+	}
+	err := db.Model(&vote).Select("user_id", "score").Where("vote_id = ?", voteId).Scan(&curVote).Error
+	if userId != curVote.userId {
 		return false
 	}
-	if userId != actualUserId {
-		return false
-	}
-	if prevScore == score {
+	if score == curVote.score {
 		score = 0
 	}
-
-	_, err = connPool.Exec("update votes set score = ? where vote_id = ?", score, voteId)
-	log.Println(err)
+	vote.VoteId = voteId
+	if err = db.Model(&vote).Update("score", score).Error; err != nil {
+		log.Println(err)
+	}
 	return err == nil
 }

@@ -14,13 +14,13 @@ type UpdateArticleData struct {
 }
 
 type AddCommentData struct {
-	ArticleId int64  `json:"articleId"`
+	ArticleId uint64 `json:"articleId"`
 	Title     string `json:"title"`
 	Content   string `json:"content"`
 }
 
 type UpdateCommentData struct {
-	CommentId int64  `json:"commentId"`
+	CommentId uint64 `json:"commentId"`
 	Title     string `json:"title"`
 	Content   string `json:"content"`
 }
