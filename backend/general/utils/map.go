@@ -26,7 +26,7 @@ func SortStringSlice(list []string) []string {
 	return list
 }
 
-func SortByIntValue(m map[string]int64) []string {
+func SortByIntValue(m map[string]uint16) []string {
 	var keys []string
 	for key := range m {
 		keys = append(keys, key)

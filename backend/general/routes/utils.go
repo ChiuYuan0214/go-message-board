@@ -78,17 +78,9 @@ func getParam(req *http.Request, key string) string {
 	return req.URL.Query().Get(key)
 }
 
-func getUserIdFromContext(req *http.Request) int64 {
-	id := req.Context().Value("userId")
-	if id == nil {
-		return 0
-	}
-	return id.(int64)
-}
-
-func getUserIdFromQuery(req *http.Request) int64 {
+func getUserIdFromQuery(req *http.Request) uint64 {
 	userIdStr := getParam(req, "userId")
-	userId, err := strconv.ParseInt(userIdStr, 10, 64)
+	userId, err := strconv.ParseUint(userIdStr, 10, 64)
 	if err != nil {
 		return 0
 	}
@@ -132,7 +124,7 @@ func (res *ResponseMessage) message(mes string) *ResponseMessage {
 	return res
 }
 
-func (res *ResponseMessage) setId(id int64) *ResponseMessage {
+func (res *ResponseMessage) setId(id uint64) *ResponseMessage {
 	(*res)["id"] = id
 	return res
 }

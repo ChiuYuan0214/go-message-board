@@ -4,26 +4,24 @@ import (
 	"general/services"
 	"net/http"
 	"strconv"
+
+	"github.com/gin-gonic/gin"
 )
 
-var commentsMap MethodMapType = map[string]HandlerType{}
-
-func init() {
-	commentsMap.get(getComments)
+func initComments(router *gin.Engine) {
+	ch := CommentsHandler{}
+	router.GET("/comments", ch.get)
 }
 
-func handleComments(writer http.ResponseWriter, req *http.Request) {
-	setHeader(writer, "json")
-	res, status := commentsMap.useHandler(writer, req)
-	DoResponse(res, status, writer)
-}
+type CommentsHandler struct{}
 
-func getComments(req *http.Request) (res interface{}, statusCode int) {
-	id := getParam(req, "articleId")
-	articleId, err := strconv.ParseInt(id, 10, 64)
+func (ch *CommentsHandler) get(c *gin.Context) {
+	id := getParam(c.Request, "articleId")
+	articleId, err := strconv.ParseUint(id, 10, 64)
 	if err != nil {
-		return newRes("fail").message("articleId format incorrect."), http.StatusBadRequest
+		c.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": "articleId format incorrect."})
+		return
 	}
 	data := services.GetComments(articleId)
-	return newRes("success").setList("list", *data), http.StatusOK
+	c.JSON(http.StatusOK, gin.H{"status": "success", "list": data})
 }

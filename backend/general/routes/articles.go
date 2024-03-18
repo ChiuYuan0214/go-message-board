@@ -5,27 +5,24 @@ import (
 	"general/types"
 	"general/utils"
 	"net/http"
+
+	"github.com/gin-gonic/gin"
 )
 
-var articlesMap = MethodMapType{}
-
-func init() {
-	articlesMap.get(getArticles)
+func initArticles(router *gin.Engine) {
+	ah := ArticlesHandler{}
+	router.GET("/articles", ah.get)
 }
 
-func handleArticles(writer http.ResponseWriter, req *http.Request) {
-	setHeader(writer, "json")
-	res, status := articlesMap.useHandler(writer, req)
-	DoResponse(res, status, writer)
-}
+type ArticlesHandler struct{}
 
-func getArticles(req *http.Request) (res interface{}, statusCode int) {
-	page, size := getPageSize(req)
-	listType := getParam(req, "type")
-	tag := getParam(req, "tag")
-	userId := getUserIdFromQuery(req)
-	selfUserId := utils.IsAuth(req)
-	var articles *[]types.ArticleListData
+func (ah *ArticlesHandler) get(c *gin.Context) {
+	page, size := getPageSize(c.Request)
+	listType := getParam(c.Request, "type")
+	tag := getParam(c.Request, "tag")
+	userId := getUserIdFromQuery(c.Request)
+	selfUserId := utils.IsAuth(c.Request)
+	var articles []types.ArticleListData
 	switch listType {
 	case "view":
 		articles = services.GetViewList(page, size, userId)
@@ -39,5 +36,5 @@ func getArticles(req *http.Request) (res interface{}, statusCode int) {
 		articles = services.GetNewestList(page, size, userId)
 	}
 
-	return newRes("success").setList("list", *articles), http.StatusOK
+	c.JSON(http.StatusOK, gin.H{"status": "success", "list": articles})
 }

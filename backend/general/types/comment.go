@@ -1,8 +1,8 @@
 package types
 
 type CommentListData struct {
-	CommentId      int64  `json:"commentId"`
-	UserId         int64  `json:"userId"`
+	CommentId      int64  `json:"commentId" gorm:"column:comment_id"`
+	UserId         int64  `json:"userId" gorm:"column:user_id"`
 	Commenter      string `json:"commenter"`
 	CommenterImage string `json:"commenterImage"`
 	Title          string `json:"title"`

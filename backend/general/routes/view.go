@@ -3,22 +3,19 @@ package routes
 import (
 	"general/services"
 	"net/http"
+
+	"github.com/gin-gonic/gin"
 )
 
-var viewMap = MethodMapType{}
-
-func init() {
-	viewMap.put(recordView)
+func initView(router *gin.Engine) {
+	vh := ViewHandler{}
+	router.PUT("/view", vh.record)
 }
 
-func handleView(writer http.ResponseWriter, req *http.Request) {
-	setHeader(writer, "json")
-	res, status := viewMap.useHandler(writer, req)
-	DoResponse(res, status, writer)
-}
+type ViewHandler struct{}
 
-func recordView(req *http.Request) (res interface{}, statusCode int) {
-	articleId := getParam(req, "articleId")
+func (vh *ViewHandler) record(c *gin.Context) {
+	articleId := getParam(c.Request, "articleId")
 	services.RecordView(articleId)
-	return newRes("success"), http.StatusOK
+	c.JSON(http.StatusOK, gin.H{"status": "success"})
 }

@@ -187,26 +187,7 @@ const Article: React.FC<Props> = ({
             font-size: 0.85rem;
             max-width: 90%;
           }
-          .votes {
-            display: flex;
-            justify-content: flex-end;
-            align-items: center;
-            position: relative;
-            width: 150px;
-            margin-left: auto;
-            bottom: -35px;
-            > p {
-              margin: 0;
-              width: 1rem;
-              font-size: 0.8rem;
-            }
-            .icon {
-              margin-right: 1rem;
-              width: 20px;
-              height: 20px;
-              cursor: pointer;
-            }
-          }
+
           .info {
             display: flex;
             align-items: flex-end;
@@ -225,6 +206,27 @@ const Article: React.FC<Props> = ({
               color: black;
             }
           }
+        }
+        .votes {
+          display: flex;
+          flex-direction: row;
+          justify-content: flex-end;
+          align-items: center;
+          position: relative;
+          width: 150px;
+          margin-left: auto;
+          bottom: -35px;
+        }
+        .votes > p {
+          margin: 0;
+          width: 1rem;
+          font-size: 0.8rem;
+        }
+        .votes .icon {
+          margin-right: 1rem;
+          width: 20px;
+          height: 20px;
+          cursor: pointer;
         }
         .comment-block {
           display: flex;

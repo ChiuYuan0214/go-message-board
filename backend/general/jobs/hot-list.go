@@ -1,7 +1,6 @@
 package jobs
 
 import (
-	"database/sql"
 	"general/constants"
 	"general/utils"
 	"log"
@@ -12,14 +11,19 @@ func updateHotList() {
 	go func() {
 		for {
 			// 統計所有article的vote和comment數量
-			rows, err := connPool.Query(`
+			var list []struct {
+				articleId    string
+				score        uint16
+				commentCount uint16
+			}
+			err := db.Raw(`
 			select a.article_id, 
             (select sum(score) from votes v where v.source_id = a.article_id and v.vote_type = 'article')
             as score, count(distinct c.comment_id) as commentCount from articles a 
             left join comments c on c.article_id = a.article_id 
             where a.publish_time <= now() 
             group by a.article_id;
-			`)
+			`).Find(&list).Error
 			if err != nil {
 				log.Println("failed to query hot list!!!")
 				time.Sleep(30 * time.Minute)
@@ -28,33 +32,20 @@ func updateHotList() {
 
 			// score * 1 + comment數 * 3
 			timeList := []string{}
-			hotMap := map[string]int64{}
-			for rows.Next() {
-				var articleId string
-				var sqlScore sql.NullInt64
-				var commentCount int16
-				err := rows.Scan(&articleId, &sqlScore, &commentCount)
-				if err != nil {
-					log.Println(err)
-					continue
-				}
-				var score int64
-				if sqlScore.Valid {
-					val, _ := sqlScore.Value()
-					score = val.(int64)
-				}
-				timeList = append(timeList, articleId)
-				num := score + 3*int64(commentCount)
+			hotMap := map[string]uint16{}
+			for _, e := range list {
+				timeList = append(timeList, e.articleId)
+				num := e.score + 3*e.commentCount
 				if num == 0 {
 					continue
 				}
-				hotMap[articleId] = num
+				hotMap[e.articleId] = num
 			}
 
 			// 照分數排序，把article_id緩存到redis (RPUSH)
-			list := utils.SortByIntValue(hotMap)
+			sortedList := utils.SortByIntValue(hotMap)
 			uniqueMap := make(map[string]bool)
-			for _, id := range list {
+			for _, id := range sortedList {
 				uniqueMap[id] = true
 			}
 
@@ -65,14 +56,14 @@ func updateHotList() {
 					filteredList = append(filteredList, id)
 				}
 			}
-			list = append(list, filteredList...)
-			if len(list) == 0 {
+			sortedList = append(sortedList, filteredList...)
+			if len(sortedList) == 0 {
 				time.Sleep(30 * time.Minute)
 				continue
 			}
 
 			cache.Del(constants.HOT_LIST_NAMAE)
-			err = cache.RPush(constants.HOT_LIST_NAMAE, list)
+			err = cache.RPush(constants.HOT_LIST_NAMAE, sortedList)
 			if err != nil {
 				log.Println("error when pushing hot list name:", err)
 			}

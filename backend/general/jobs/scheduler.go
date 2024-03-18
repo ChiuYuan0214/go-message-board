@@ -1,15 +1,16 @@
 package jobs
 
 import (
-	"database/sql"
 	"general/types"
+
+	"gorm.io/gorm"
 )
 
-var connPool *sql.DB
+var db *gorm.DB
 var cache *types.RedisCache
 
-func UsePool(db *sql.DB) {
-	connPool = db
+func UsePool(DB *gorm.DB) {
+	db = DB
 }
 
 func UseCache(redisCache *types.RedisCache) {

@@ -7,12 +7,12 @@ import (
 var (
 	PORT = "8080"
 
-	MYSQL_IP       = "127.0.0.1:3306"
-	REDIS_IP       = "127.0.0.1:6379"
-	MYSQL_PASSWORD = "1111"
-	REDIS_PASSWORD = "test1234"
+	MYSQL_IP       = "your-mysql-address"
+	REDIS_IP       = "your-redis-address"
+	MYSQL_PASSWORD = "your-mysql-password"
+	REDIS_PASSWORD = "your-redis-password"
 
-	JWT_HS256_SECRET_KEY  = "jwt-key"
+	JWT_HS256_SECRET_KEY  = "your-jwt-key"
 	VIEW_COUNT_CACHE_NAME = "viewCount"
 	VIEW_LIST_NAME        = "viewList"
 	COMMENTED_ARTICLE_SET = "commentedArticleSet"

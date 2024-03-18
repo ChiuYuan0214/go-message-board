@@ -36,32 +36,71 @@ const Home: NextPage<Props> = (props) => {
           content="message board created with react + golang"
         />
       </Head>
-      <main className={styles.main} onClick={() => setIsEdit(false)}>
+      <main style={{ width: "100%" }} onClick={() => setIsEdit(false)}>
         <SideBar />
-        <ArticleList
-          userId={userId}
-          type={type as string}
-          data={props.articleList}
-        />
-        <div style={{ flexGrow: 1, height: "100vh" }}>
-          <FadeIn duration={1}>
-            <div className="add-article-block">
-              <AddNewContentBlock
-                toggle={(e: React.MouseEvent<HTMLDivElement>) => {
-                  e.stopPropagation();
-                  setIsEdit((prev) => (userId ? !prev : false));
-                }}
+        <div className="articles">
+          <ArticleList
+            userId={userId}
+            type={type as string}
+            data={props.articleList}
+          />
+          <div className="add-article-block">
+            <FadeIn duration={1}>
+              <div className="add-content-block">
+                <AddNewContentBlock
+                  toggle={(e: React.MouseEvent<HTMLDivElement>) => {
+                    e.stopPropagation();
+                    setIsEdit((prev) => (userId ? !prev : false));
+                  }}
+                />
+              </div>
+              <AddArticleBlock
+                isEdit={isEdit}
+                onClose={() => setIsEdit(false)}
               />
-            </div>
-            <AddArticleBlock isEdit={isEdit} onClose={() => setIsEdit(false)} />
-          </FadeIn>
+            </FadeIn>
+          </div>
         </div>
       </main>
       <style jsx>{`
-        .add-article-block {
-          position: fixed;
-          top: 3.6rem;
-          transform: translateX(50%);
+        .articles {
+          display: flex;
+          margin-left: 30%;
+          margin-right: 30%;
+          padding: 1rem;
+          .add-article-block {
+            flex-grow: 1;
+            height: 100vh;
+            position: relative;
+            .add-content-block {
+              position: fixed;
+              top: 3.6rem;
+              transform: translateX(50%);
+            }
+          }
+          @media only screen and (max-width: 950px) {
+            max-width: 80%;
+            flex-direction: column;
+            align-items: flex-end;
+            margin-top: 50px;
+            margin-right: 0;
+            .add-article-block {
+              order: 1;
+              flex-grow: 0;
+              height: auto;
+              .add-content-block {
+                position: relative;
+                top: 0;
+                transform: none;
+                margin: 0 auto;
+              }
+            }
+          }
+          @media only screen and (max-width: 650px) {
+            max-width: 100%;
+            margin-left: 0;
+            align-items: center;
+          }
         }
       `}</style>
     </div>

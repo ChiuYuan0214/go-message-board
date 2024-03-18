@@ -3,6 +3,8 @@ const DownVoteIcon: React.FC<{ hasVote: boolean }> = ({ hasVote }) => {
     <svg
       xmlns="http://www.w3.org/2000/svg"
       fill={hasVote ? "#f26b82" : "grey"}
+      width="20px"
+      height="20px"
       viewBox="0 0 24 24"
     >
       <g id="SVGRepo_bgCarrier" strokeWidth="0"></g>

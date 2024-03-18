@@ -2,32 +2,30 @@ package routes
 
 import (
 	"encoding/json"
+	"general/routes/middleware"
 	"general/services"
 	"general/types"
 	"general/utils"
 	"net/http"
 	"strconv"
 	"time"
+
+	"github.com/gin-gonic/gin"
 )
 
-var articleMap = MethodMapType{}
-
-func init() {
-	articleMap.get(getArticle).
-		put(authMethod(updateArticle)).
-		post(authMethod(addArticle)).
-		delete(authMethod(deleteArticle))
+func initArticle(router *gin.Engine) {
+	ah := ArticleHandler{}
+	router.GET("/article", ah.get)
+	router.POST("/article", middleware.Auth(), ah.add)
+	router.PUT("/article", middleware.Auth(), ah.update)
+	router.DELETE("/article", middleware.Auth(), ah.delete)
 }
 
-func handleArticle(writer http.ResponseWriter, req *http.Request) {
-	setHeader(writer, "json")
-	res, status := articleMap.useHandler(writer, req)
-	DoResponse(res, status, writer)
-}
+type ArticleHandler struct{}
 
-func getArticle(req *http.Request) (res interface{}, statusCode int) {
-	userId := getUserIdFromQuery(req)
-	query := getQuery(req)
+func (ah *ArticleHandler) get(c *gin.Context) {
+	userId := getUserIdFromQuery(c.Request)
+	query := getQuery(c.Request)
 	id := query.Get("articleId")
 	article, status := services.GetArticle(userId, id)
 	if status != 0 {
@@ -40,77 +38,91 @@ func getArticle(req *http.Request) (res interface{}, statusCode int) {
 		default:
 			message = "something went wrong."
 		}
-		return newRes("fail").message(message), status
+		c.JSON(status, gin.H{"status": "fail", "message": message})
+		return
 	}
 
 	tagList := services.GetTagsByArticleId(id)
 	article.Tags = tagList
 
-	return newRes("success").setItem("data", *article), http.StatusAccepted
+	c.JSON(http.StatusOK, gin.H{"status": "success", "data": article})
 }
 
-func addArticle(req *http.Request) (res interface{}, statusCode int) {
-	userId := getUserIdFromContext(req)
+func (ah *ArticleHandler) add(c *gin.Context) {
+	val, _ := c.Get("userId")
+	userId := val.(uint64)
 	var data types.AddArticleData
-	err := json.NewDecoder(req.Body).Decode(&data)
+	err := json.NewDecoder(c.Request.Body).Decode(&data)
 	if isErr(err) {
-		return newRes("fail").message("body format was wrong."), http.StatusBadRequest
+		c.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": "body format was wrong."})
+		return
 	}
 
 	publishTime, err := time.Parse("2006-01-02T15:04", data.PublishTime)
 	if err != nil {
-		return "time format was wrong", http.StatusBadRequest
+		c.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": "time format was wrong."})
+		return
 	}
 
 	id := services.InsertArticle(userId, &data, &publishTime)
 	if id == 0 {
-		return newRes("fail").message("failed to insert article."), http.StatusInternalServerError
+		c.JSON(http.StatusInternalServerError, gin.H{"status": "fail", "message": "failed to insert article."})
+		return
 	}
 
-	if !services.InsertTags(id, &data.Tags) {
-		return newRes("fail").message("failed to insert tags."), http.StatusInternalServerError
+	if !services.InsertTags(id, data.Tags) {
+		c.JSON(http.StatusInternalServerError, gin.H{"status": "fail", "message": "failed to insert tags."})
+		return
 	}
 
-	return newRes("success").setId(id), http.StatusAccepted
+	c.JSON(http.StatusOK, gin.H{"status": "success", "id": id})
 }
 
-func updateArticle(req *http.Request) (res interface{}, status int) {
-	userId := getUserIdFromContext(req)
-	articleId := utils.StringToInt64(getParam(req, "articleId"))
+func (ah *ArticleHandler) update(c *gin.Context) {
+	val, _ := c.Get("userId")
+	userId := val.(uint64)
+	articleId := utils.StringToUint64(getParam(c.Request, "articleId"))
 	if articleId == 0 {
-		return newRes("fail").message("articleId format incorrect."), http.StatusBadRequest
+		c.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": "articleId format incorrect."})
+		return
 	}
 
 	var data types.UpdateArticleData
-	err := json.NewDecoder(req.Body).Decode(&data)
+	err := json.NewDecoder(c.Request.Body).Decode(&data)
 	if isErr(err) {
-		return newRes("fail").message("body format was wrong."), http.StatusBadRequest
+		c.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": "body format was wrong."})
+		return
 	}
 
 	message, status := services.UpdateArticle(userId, articleId, &data)
 	if message != "" {
-		return newRes("fail").message(message), status
+		c.JSON(status, gin.H{"status": "fail", "message": message})
+		return
 	}
-	if !services.DeleteRemovedTags(articleId, &data.Tags) || !services.InsertTags(articleId, &data.Tags) {
-		return newRes("fail").message("failed to update tags."), http.StatusInternalServerError
+	if !services.DeleteRemovedTags(articleId, data.Tags) || !services.InsertTags(articleId, data.Tags) {
+		c.JSON(http.StatusInternalServerError, gin.H{"status": "fail", "message": "failed to update tags."})
+		return
 	}
 
-	return newRes("success"), http.StatusAccepted
+	c.JSON(http.StatusOK, gin.H{"status": "success"})
 }
 
-func deleteArticle(req *http.Request) (res interface{}, statusCode int) {
-	userId := getUserIdFromContext(req)
-	id := getParam(req, "articleId")
+func (ah *ArticleHandler) delete(c *gin.Context) {
+	val, _ := c.Get("userId")
+	userId := val.(uint64)
+	id := getParam(c.Request, "articleId")
 
-	articleId, err := strconv.ParseInt(id, 10, 64)
+	articleId, err := strconv.ParseUint(id, 10, 64)
 	if err != nil {
-		return newRes("fail").message("articleId format incorrect."), http.StatusBadRequest
+		c.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": "articleId format incorrect."})
+		return
 	}
 
 	message, status := services.DeleteArticle(userId, articleId)
 	if message != "" {
-		return newRes("fail").message(message), status
+		c.JSON(status, gin.H{"status": "fail", "message": message})
+		return
 	}
 
-	return newRes("success"), http.StatusAccepted
+	c.JSON(http.StatusOK, gin.H{"status": "success"})
 }

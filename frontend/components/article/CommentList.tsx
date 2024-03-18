@@ -1,6 +1,8 @@
 import { useContext } from "react";
-import Comment from "./Comment";
+
 import { authCtx } from "@/context/auth";
+import { Comment } from "@/types/comment";
+import CommentCmp from "./Comment";
 
 interface Props {
   data: Comment[];
@@ -20,7 +22,7 @@ const CommentList: React.FC<Props> = ({ data, onDelete }) => {
       ) : (
         <ul>
           {data.map((d, i) => (
-            <Comment
+            <CommentCmp
               key={d.commentId}
               data={d}
               hasBorder={i > 0}

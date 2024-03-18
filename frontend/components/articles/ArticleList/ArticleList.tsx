@@ -97,12 +97,11 @@ const ArticleList: React.FC<Props> = (props) => {
           display: flex;
           flex-direction: column;
           align-items: center;
-          margin-left: ${props.marginLeft || "330px"};
-          width: 600px;
+          margin-left: ${props.marginLeft || "0"};
+          max-width: 600px;
           ul {
             margin-top: 5rem;
             padding: 0;
-            width: 600px;
           }
           .loader {
             border: 8px solid #f3f3f3;
@@ -116,6 +115,12 @@ const ArticleList: React.FC<Props> = (props) => {
           }
           .visible {
             display: visible;
+          }
+          @media only screen and (max-width: 950px) {
+            order: 2;
+            ul {
+              margin-top: 1rem;
+            }
           }
         }
         @keyframes spin {
