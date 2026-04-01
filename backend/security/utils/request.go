@@ -61,3 +61,23 @@ func ConstructParamsFromStruct(data interface{}) (cols string, args []interface{
 
 	return ConstructParams(&mapping)
 }
+
+func ConstructMapFromStruct(data interface{}) map[string]interface{} {
+	dataType := reflect.TypeOf(data)
+	if dataType.Kind() != reflect.Struct {
+		return nil
+	}
+
+	mapping := make(map[string]interface{})
+	dataValue := reflect.ValueOf(data)
+
+	for i := 0; i < dataType.NumField(); i++ {
+		field := dataType.Field(i).Tag.Get("json")
+		val := dataValue.Field(i).Interface()
+		if val != "" && val != 0 {
+			mapping[field] = val
+		}
+	}
+
+	return mapping
+}

@@ -18,7 +18,7 @@ Read these in order:
 2. `ENGINEERING_RULES` from `env.md`
 3. `PROJECT_STRUCTURE_INDEX` from `env.md`
 4. `BACKEND_CODE_STYLE` from `env.md` when checking Go code
-5. `.codex/skills/references/project-notes.md` when local run or integration setup matters
+5. `PROJECT_NOTES` from `env.md` when local run or integration setup matters
 
 Use the index to identify the owning service and the smallest relevant command surface before running checks.
 

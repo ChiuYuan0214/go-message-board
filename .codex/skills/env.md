@@ -5,17 +5,18 @@ Use these canonical paths when a skill needs to load shared project guidance.
 ## Path Roots
 
 - `SKILLS_ROOT`: `.codex/skills`
-- `RULES_ROOT`: `.codex/skills/rules`
-- `REFERENCES_ROOT`: `.codex/skills/references`
+- `RULES_ROOT`: `rules`
+- `REFERENCES_ROOT`: `references`
 
 ## Shared Files
 
-- `ENGINEERING_RULES`: `.codex/skills/rules/engineering.md`
-- `REFERENCES_INDEX`: `.codex/skills/references/README.md`
-- `BACKEND_CODE_STYLE`: `.codex/skills/references/code-style/go-backend.md`
-- `FRONTEND_CODE_STYLE`: `.codex/skills/references/code-style/typescript-frontend.md`
-- `PROJECT_STRUCTURE_INDEX`: `.codex/skills/references/project-structure/README.md`
-- `DEPIN_ARCHITECTURE`: `.codex/skills/references/architecture/depin-pattern.md`
+- `ENGINEERING_RULES`: `rules/engineering.md`
+- `REFERENCES_INDEX`: `references/README.md`
+- `PROJECT_NOTES`: `references/project-notes.md`
+- `BACKEND_CODE_STYLE`: `references/code-style/go-backend.md`
+- `FRONTEND_CODE_STYLE`: `references/code-style/typescript-frontend.md`
+- `PROJECT_STRUCTURE_INDEX`: `references/project-structure/README.md`
+- `DEPIN_ARCHITECTURE`: `references/architecture/depin-pattern.md`
 
 ## Usage
 

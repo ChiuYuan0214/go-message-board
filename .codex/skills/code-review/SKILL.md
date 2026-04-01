@@ -18,7 +18,7 @@ Read these in order:
 2. `ENGINEERING_RULES` from `env.md`
 3. `PROJECT_STRUCTURE_INDEX` from `env.md`
 4. `BACKEND_CODE_STYLE` or `FRONTEND_CODE_STYLE` from `env.md`, depending on the files under review
-5. `.codex/skills/references/project-notes.md` if setup, docker, or local verification matters
+5. `PROJECT_NOTES` from `env.md` if setup, docker, or local verification matters
 
 Treat `project-structure` as a discovery index only. Confirm real source code before concluding that an existing method or flow is correct.
 

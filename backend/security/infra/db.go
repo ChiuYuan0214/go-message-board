@@ -1,57 +1,45 @@
 package infra
 
 import (
-	"database/sql"
-	"fmt"
 	"log"
 	"security/constants"
 	"time"
 
-	_ "github.com/go-sql-driver/mysql"
+	"gorm.io/driver/mysql"
+	"gorm.io/gorm"
 )
 
 var _ RDB = (*MySQL)(nil)
 
 type MySQL struct {
-	db *sql.DB
+	db *gorm.DB
 }
 
 func (m *MySQL) Run() (err error) {
 	for {
-		connectionString := "root:" + constants.MYSQL_PASSWORD + "@tcp(" + constants.MYSQL_IP + ")/go_project?parseTime=true"
-
-		// create a connection pool
-		m.db, err = sql.Open("mysql", connectionString)
+		dsn := "root:" + constants.MYSQL_PASSWORD + "@(" + constants.MYSQL_IP + ")/go_project?charset=utf8&parseTime=True&loc=Local"
+		m.db, err = gorm.Open(mysql.Open(dsn), &gorm.Config{})
 		if err != nil {
 			log.Println(err)
 			time.Sleep(5 * time.Second)
 			continue
 		}
-
-		err = m.db.Ping()
-		if err != nil {
-			log.Println(err)
-			m.db.Close()
-			time.Sleep(5 * time.Second)
-			continue
-		}
-
-		fmt.Println("connected to mysql")
-		m.db.SetMaxOpenConns(15)
-		m.db.SetMaxIdleConns(5)
-		m.db.SetConnMaxIdleTime(time.Minute * 30)
-
 		break
 	}
 	return
 }
 
 func (m *MySQL) Stop() {
-	if m.db != nil {
-		m.db.Close()
+	if m.db == nil {
+		return
+	}
+
+	db, err := m.db.DB()
+	if err == nil {
+		db.Close()
 	}
 }
 
-func (m *MySQL) DB() *sql.DB {
+func (m *MySQL) Orm() *gorm.DB {
 	return m.db
 }

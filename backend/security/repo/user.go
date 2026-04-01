@@ -18,20 +18,16 @@ func NewUser(db infra.RDB) *UserImpl {
 }
 
 func (r *UserImpl) ListUsers() ([]store.User, error) {
-	rows, err := r.db.DB().Query(`select u.user_id, u.username, ifnull(i.file_name, '') from users u left join images i on i.user_id = u.user_id`)
+	var users []store.User
+	err := r.db.Orm().Raw(`select u.user_id, u.username, ifnull(i.file_name, '') as user_image 
+	from users u left join images i on i.user_id = u.user_id`).Scan(&users).Error
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
 
-	users := make([]store.User, 0)
-	for rows.Next() {
-		var user store.User
-		if err = rows.Scan(&user.UserId, &user.UserName, &user.UserImage); err != nil {
-			return nil, err
-		}
-		users = append(users, user)
+	if users == nil {
+		users = make([]store.User, 0)
 	}
 
-	return users, rows.Err()
+	return users, nil
 }

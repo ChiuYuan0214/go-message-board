@@ -1,127 +1,112 @@
 ---
 name: refactor
 description: >
-  Repository-pattern migration skill for the go-message-board general service.
-  Use this skill whenever the user wants to refactor, restructure, optimize, or
-  migrate service code — especially when keywords like refactor, 重構, cleanup,
-  整理, optimize, 優化 appear, or when they ask to migrate functions from the
-  global-db pattern to the repo/service struct pattern. Also trigger when the
-  user asks to continue, finish, or complete an ongoing refactor, or references
-  the infra/repo/services layering.
+  General refactor skill for go-message-board. Use this skill whenever the user
+  wants to refactor, restructure, optimize, clean up, migrate, or standardize
+  existing code. Trigger on keywords such as refactor, 重構, cleanup, 整理,
+  optimize, 優化, migrate, standardize, continue refactor, or finish refactor.
 ---
 
-# Refactor Skill — Repository Pattern Migration
+# Refactor Skill
 
 ## Before Anything Else — Load Context
 
 Read these before writing any code:
 
-1. **`.claude/skills/rules/engineering.md`** — rules that apply to every task
-2. **`.claude/skills/references/code-style/go-backend.md`** — naming conventions, GORM patterns, import style
-3. **`.claude/skills/references/project-structure/README.md`** — existing service functions and types (avoid re-implementing what already exists)
+1. **`.claude/skills/env.md`** — canonical shared paths
+2. **`ENGINEERING_RULES`** from `env.md` — rules that apply to every task
+3. **`REFERENCES_INDEX`** from `env.md` — service map and reusable references
+4. **`BACKEND_CODE_STYLE`** from `env.md` when changing Go code
+5. **`FRONTEND_CODE_STYLE`** from `env.md` when changing frontend code
+
+Always read the current state of the relevant files before writing anything.
 
 ---
 
-This project's general service is being migrated from standalone service
-functions (using a global `db *gorm.DB`) to a layered repository pattern.
-Always read the current state of the files before writing anything.
+## Goal
 
-## The Three-Layer Architecture
+Refactor existing code without changing intended behavior unless the user explicitly asks for a behavioral change.
 
-```
-infra/          RDB interface wrapping *gorm.DB
-repo/           per-domain interface + ArticleImpl (raw SQL lives here)
-services/       per-domain struct with injected repo; business logic
-routes/         wires up structs, calls service methods
-```
+Prefer small, reviewable steps that improve one of these areas:
+- architecture consistency
+- naming clarity
+- duplication removal
+- dependency direction
+- data access boundaries
+- testability
+- dead code removal
 
-### Layer contracts
+---
 
-**`infra/interface.go`** — already done, do not modify:
-```go
-type RDB interface { Orm() *gorm.DB }
-```
+## Scope Analysis
 
-**`repo/interface.go`** — one interface per domain, add methods as needed:
-```go
-type Article interface {
-    GetArticleDetail(userId uint64, articleId string) (types.Article, error)
-    // add new methods here
-}
-```
+Before editing, identify:
+- What behavior must stay the same
+- Which files own the current behavior
+- Whether reusable abstractions already exist
+- Whether the refactor affects API shape, persistence, or side-effects
+- What verification is needed to prove the refactor is safe
 
-**`repo/article.go`** — `ArticleImpl` implements `repo.Article` via `infra.RDB`:
-```go
-type ArticleImpl struct { db infra.RDB }
+Then summarize:
 
-func (r *ArticleImpl) SomeMethod(...) (..., error) {
-    err = r.db.Orm()./* gorm chain */.Error
-    return
-}
+```text
+Refactor target: <what is being improved>
+Behavior preserved: <what must not change>
+Affected files: <list>
+Main risks: <list>
+Verification: <tests/build/manual checks>
 ```
 
-**`services/article.go`** — `ArticleImpl` holds injected repos, exposes business methods:
-```go
-type ArticleImpl struct { articleRepo repo.Article }
+If the requested refactor is ambiguous, ask only the questions needed to avoid risky assumptions.
 
-func (s *ArticleImpl) SomeMethod(...) (..., int) {
-    result, err := s.articleRepo.SomeRepoMethod(...)
-    if err != nil { ... return nil, http.StatusInternalServerError }
-    return result, 0
-}
+---
+
+## Planning
+
+Present a short numbered plan before editing.
+
+Use dependency-aware ordering. For backend structural work, prefer:
+
+```text
+entities → types → repo → service → route
 ```
 
-## Migration Workflow (per function)
+For other refactors, order changes from lowest-level dependency to highest-level call site.
 
-For each standalone service function that still uses the global `db`:
+Keep each step narrow enough to validate independently.
 
-1. **Read** the function in `services/article.go`. Identify the SQL/GORM query.
+---
 
-2. **`repo/interface.go`** — add the method signature to the `Article` interface.
-   Return `(T, error)` — never HTTP codes from repo.
+## Refactor Rules
 
-3. **`repo/article.go`** — implement the method on `repo.ArticleImpl`.
-   - Use `r.db.Orm()` to access GORM.
-   - Use named return values + bare `return` for brevity (see existing `GetArticleDetail`).
+- Preserve behavior by default.
+- Do not mix refactoring with unrelated feature work.
+- Prefer moving logic behind existing abstractions over inventing parallel patterns.
+- Keep HTTP concerns in handlers/services, not in repo/data-access layers.
+- Avoid package-level mutable state.
+- Prefer struct methods and injected dependencies over global access patterns.
+- Add compile guards where the codebase already uses them.
+- Delete empty files if a refactor removes their last meaningful content.
 
-4. **`services/article.go`** — convert the standalone function to a method on
-   `services.ArticleImpl`. It should call `s.articleRepo.TheNewRepoMethod(...)`.
-   Keep HTTP status codes and business-logic checks here, not in repo.
-   Remove the original standalone function.
+---
 
-5. **`routes/article.go`** — update any call sites that used the old standalone
-   `services.FuncName(...)` to use the service struct method instead.
-   Ensure `ArticleHandler` holds (or can access) an `*services.ArticleImpl`.
+## Implementation Workflow
 
-6. **Verify** the compile still works conceptually: no leftover references to
-   the removed standalone function, no direct `db.` usage in services.
+1. Read the current implementation and identify the boundary to improve.
+2. Update low-level contracts first.
+3. Move or simplify implementations in small steps.
+4. Update callers after the new abstraction is ready.
+5. Remove obsolete code paths only after all references are moved.
+6. Verify there are no stale references, duplicate implementations, or dead imports.
 
-## Remaining Work in article.go (as of 2026-04-01)
+If the refactor spans multiple files, explain progress in small checkpoints instead of making the user infer what changed.
 
-These standalone functions still use the global `db` and need migrating:
+---
 
-| Function | Notes |
-|---|---|
-| `InsertArticle` | creates article, returns new ID |
-| `UpdateArticle` | ownership check + partial update |
-| `DeleteArticle` | cascades to votes, comments, tags, collections |
-| `GetTagsByArticleId` | joins tags via article_tag_maps |
-| `InsertTags` | upsert tags + article_tag_maps |
-| `DeleteRemovedTags` | removes stale tag associations |
+## Validation Checklist
 
-## Conventions to Follow
-
-- **No HTTP codes in repo** — repo returns `error`; service translates to codes.
-- **Named returns** in repo methods — follow the style of `GetArticleDetail`.
-- **Compile guard** at top of repo file: `var _ Article = (*ArticleImpl)(nil)`
-- **One interface per domain** — `repo.Article`, `repo.Comment`, etc.
-- **Don't touch unrelated files** — scope each change to one domain or one layer.
-- **Service struct, not package-level vars** — no new `var db` additions anywhere.
-
-## Checklist Before Finishing
-
-- [ ] `repo/interface.go` has all new method signatures
-- [ ] `repo/article.go` implements them all (compile guard passes)
-- [ ] `services/article.go` has no remaining standalone functions using global `db`
-- [ ] `routes/article.go` calls service methods, not old standalone functions
-- [ ] Project compiles (`go build ./...` in `backend/general/`)
+- [ ] Behavior-preserving assumptions are still true
+- [ ] No stale call sites remain
+- [ ] No duplicate old/new paths remain
+- [ ] Imports and interfaces are consistent
+- [ ] Relevant build/tests/checks pass, or any unrun checks are clearly noted

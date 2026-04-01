@@ -1,7 +1,6 @@
 package services
 
 import (
-	"database/sql"
 	"security/repo"
 	"security/store"
 	"security/utils"
@@ -54,12 +53,7 @@ func (s *RegisterImpl) InvalidateVerificationCodesByCodeId(codeId int64) bool {
 }
 
 func (s *RegisterImpl) GetActiveVerificationCode(userId uint64) (string, error) {
-	code, err := s.registerRepo.GetActiveVerificationCode(userId)
-	if err == sql.ErrNoRows {
-		return "", nil
-	}
-
-	return code, err
+	return s.registerRepo.GetActiveVerificationCode(userId)
 }
 
 func (s *RegisterImpl) ScheduleCodeInvalidation(codeId int64, veriCode *utils.VerificationCode) {

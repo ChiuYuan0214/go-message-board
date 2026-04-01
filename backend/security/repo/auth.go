@@ -1,9 +1,11 @@
 package repo
 
 import (
-	"database/sql"
+	"security/entities"
 	"security/infra"
 	"security/types"
+
+	"gorm.io/gorm"
 )
 
 var _ Auth = (*AuthImpl)(nil)
@@ -21,10 +23,18 @@ func NewAuth(db infra.RDB, cache infra.Cache) *AuthImpl {
 }
 
 func (r *AuthImpl) GetLoginCredentialByEmail(email string) (userId uint64, hashedPassword string, err error) {
-	err = r.db.DB().QueryRow("select user_id, password from users where email = ?", email).Scan(&userId, &hashedPassword)
-	if err == sql.ErrNoRows {
+	var user entities.User
+	err = r.db.Orm().
+		Select("user_id", "password").
+		Where("email = ?", email).
+		First(&user).Error
+	if err == gorm.ErrRecordNotFound {
 		err = nil
+		return
 	}
+
+	userId = user.UserId
+	hashedPassword = user.Password
 	return
 }
 

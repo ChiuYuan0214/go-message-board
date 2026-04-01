@@ -14,22 +14,22 @@ Then read **`ENGINEERING_RULES`** and **`REFERENCES_INDEX`** from `env.md`.
 The shared references directory is structured as:
 
 ```
-.codex/skills/references/
+<REFERENCES_ROOT>/
 ├── README.md                             ← start here
 ├── code-style/
 │   ├── go-backend.md                     ← service function patterns, route handlers, GORM, naming
 │   └── typescript-frontend.md            ← component pattern, hooks, API layer, styled-jsx
 └── project-structure/
     ├── README.md                         ← index of all existing methods (find reusable code here)
-    ├── general/entities, types, repo, services, routes/
-    ├── security/types, services, routes/
-    ├── chat/types, services/
-    └── stream/types, services, routes/
+    ├── general/README.md, entities, types, infra, repo, service, routes/
+    ├── security/README.md, entities, types, infra, repo, services, routes/
+    ├── chat/README.md, types, infra, repo, services, routes/
+    └── stream/README.md, types, services, routes/
 ```
 
 **Loading order for a typical backend feature:**
 1. `PROJECT_STRUCTURE_INDEX` from `env.md` — understand service ownership, find existing functions to reuse
-2. `.codex/skills/references/project-structure/<service>/services/<FunctionName>.md` — check exact signature when reusing
+2. Open the relevant leaf doc under `REFERENCES_ROOT/project-structure/<service>/<layer>/<dependency>/<Method>.md` — check exact signature when reusing
 3. `BACKEND_CODE_STYLE` from `env.md` — apply correct patterns when writing new code
 
 **For frontend work:** also read `FRONTEND_CODE_STYLE` from `env.md`

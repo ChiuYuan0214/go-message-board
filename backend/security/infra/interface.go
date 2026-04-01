@@ -1,12 +1,13 @@
 package infra
 
 import (
-	"database/sql"
 	"security/types"
+
+	"gorm.io/gorm"
 )
 
 type RDB interface {
-	DB() *sql.DB
+	Orm() *gorm.DB
 }
 
 type Cache interface {
