@@ -3,20 +3,25 @@ package routes
 import (
 	"encoding/json"
 	"general/routes/middleware"
-	"general/services"
+	"general/service"
 	"general/types"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 )
 
-func initFollow(router *gin.Engine) {
-	fh := FollowHandler{}
-	router.POST("/follow", middleware.Auth(), fh.add)
-	router.DELETE("/follow", middleware.Auth(), fh.remove)
+type FollowHandler struct {
+	router        Router
+	followService service.Follow
 }
 
-type FollowHandler struct{}
+func (fh *FollowHandler) Run() (err error) {
+	fh.router.Post("/follow", middleware.Auth(), fh.add)
+	fh.router.Delete("/follow", middleware.Auth(), fh.remove)
+	return
+}
+
+func (fh *FollowHandler) Stop() {}
 
 func (fh *FollowHandler) add(c *gin.Context) {
 	var data types.FollowData
@@ -31,7 +36,7 @@ func (fh *FollowHandler) add(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": "userId and followee cannot be empty"})
 		return
 	}
-	if !services.AddFollow(userId, data.Followee) {
+	if !fh.followService.AddFollow(userId, data.Followee) {
 		c.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": "failed to insert data"})
 		return
 	}
@@ -51,7 +56,7 @@ func (fh *FollowHandler) remove(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": "userId and followee cannot be empty"})
 		return
 	}
-	if !services.RemoveFollow(userId, data.Followee) {
+	if !fh.followService.RemoveFollow(userId, data.Followee) {
 		c.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": "failed to delete data"})
 		return
 	}

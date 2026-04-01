@@ -7,7 +7,9 @@ description: Feature development workflow for go-message-board. Guides bottom-up
 
 ## Before Anything Else — Load Context
 
-Read **`.claude/skills/references/README.md`** first — it points you to what to read next.
+Read **`.claude/skills/rules/engineering.md`** — these rules apply to every task.
+
+Then read **`.claude/skills/references/README.md`** — it points you to what to read next.
 
 The shared references directory is structured as:
 

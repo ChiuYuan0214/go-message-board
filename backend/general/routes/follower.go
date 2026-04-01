@@ -2,20 +2,25 @@ package routes
 
 import (
 	"encoding/json"
-	"general/services"
+	"general/service"
 	"general/types"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 )
 
-func initFollower(router *gin.Engine) {
-	fh := FollowerHandler{}
-	router.GET("/follower", fh.get)
-	router.DELETE("/follower", fh.remove)
+type FollowerHandler struct {
+	router          Router
+	followerService service.Follower
 }
 
-type FollowerHandler struct{}
+func (fh *FollowerHandler) Run() (err error) {
+	fh.router.Get("/follower", fh.get)
+	fh.router.Delete("/follower", fh.remove)
+	return
+}
+
+func (fh *FollowerHandler) Stop() {}
 
 func (fh *FollowerHandler) remove(c *gin.Context) {
 	var data types.FollowerData
@@ -30,7 +35,7 @@ func (fh *FollowerHandler) remove(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": "userId and follower cannot be empty"})
 		return
 	}
-	if !services.RemoveFollower(userId, data.Follower) {
+	if !fh.followerService.RemoveFollower(userId, data.Follower) {
 		c.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": "failed to delete data"})
 		return
 	}
@@ -43,6 +48,6 @@ func (fh *FollowerHandler) get(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": "userId not valid."})
 		return
 	}
-	data := services.GetFollowers(userId)
+	data := fh.followerService.GetFollowers(userId)
 	c.JSON(http.StatusOK, gin.H{"status": "success", "list": data})
 }

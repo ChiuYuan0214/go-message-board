@@ -14,10 +14,11 @@ description: >
 
 ## Before Anything Else — Load Context
 
-Read these shared references before writing any code:
+Read these before writing any code:
 
-1. **`.claude/skills/references/code-style/go-backend.md`** — naming conventions, GORM patterns, import style
-2. **`.claude/skills/references/project-structure/README.md`** — existing service functions and types (avoid re-implementing what already exists)
+1. **`.claude/skills/rules/engineering.md`** — rules that apply to every task
+2. **`.claude/skills/references/code-style/go-backend.md`** — naming conventions, GORM patterns, import style
+3. **`.claude/skills/references/project-structure/README.md`** — existing service functions and types (avoid re-implementing what already exists)
 
 ---
 

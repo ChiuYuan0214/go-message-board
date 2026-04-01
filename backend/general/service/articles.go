@@ -9,7 +9,7 @@ import (
 	"strconv"
 )
 
-var _ Article = (*ArticleImpl)(nil)
+var _ Articles = (*ArticlesImpl)(nil)
 
 type ArticlesImpl struct {
 	articleRepo repo.Article

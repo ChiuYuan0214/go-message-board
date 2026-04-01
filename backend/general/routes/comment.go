@@ -2,7 +2,7 @@ package routes
 
 import (
 	"general/routes/middleware"
-	"general/services"
+	"general/service"
 	"general/types"
 	"general/utils"
 	"net/http"
@@ -10,14 +10,19 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func initComment(router *gin.Engine) {
-	ch := CommentHandler{}
-	router.POST("/comment", middleware.Auth(), ch.add)
-	router.PUT("/comment", middleware.Auth(), ch.update)
-	router.DELETE("/comment", middleware.Auth(), ch.delete)
+type CommentHandler struct {
+	router         Router
+	commentService service.Comment
 }
 
-type CommentHandler struct{}
+func (ch *CommentHandler) Run() (err error) {
+	ch.router.Post("/comment", middleware.Auth(), ch.add)
+	ch.router.Put("/comment", middleware.Auth(), ch.update)
+	ch.router.Delete("/comment", middleware.Auth(), ch.delete)
+	return
+}
+
+func (ch *CommentHandler) Stop() {}
 
 func (ch *CommentHandler) add(c *gin.Context) {
 	val, _ := c.Get("userId")
@@ -33,7 +38,7 @@ func (ch *CommentHandler) add(c *gin.Context) {
 		return
 	}
 
-	commentId := services.AddComment(userId, data)
+	commentId := ch.commentService.AddComment(userId, data)
 	if commentId == 0 {
 		c.JSON(http.StatusInternalServerError, gin.H{"status": "fail", "message": "something went wrong."})
 		return
@@ -52,7 +57,7 @@ func (ch *CommentHandler) update(c *gin.Context) {
 		return
 	}
 
-	message, status = services.UpdateComment(userId, data)
+	message, status = ch.commentService.UpdateComment(userId, data)
 	if message != "" {
 		c.JSON(status, gin.H{"status": "fail", "message": message})
 		return
@@ -64,7 +69,7 @@ func (ch *CommentHandler) delete(c *gin.Context) {
 	val, _ := c.Get("userId")
 	userId := val.(uint64)
 	commentId := getParam(c.Request, "commentId")
-	message, status := services.DeleteComment(userId, commentId)
+	message, status := ch.commentService.DeleteComment(userId, commentId)
 	if message != "" {
 		c.JSON(status, gin.H{"status": "fail", "message": message})
 		return

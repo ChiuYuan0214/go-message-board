@@ -1,6 +1,7 @@
 package routes
 
 import (
+	"general/service"
 	"general/types"
 	"general/utils"
 	"net/http"
@@ -9,7 +10,8 @@ import (
 )
 
 type ArticlesHandler struct {
-	router Router
+	router          Router
+	articlesService service.Articles
 }
 
 func (ah *ArticlesHandler) Run() (err error) {
@@ -17,7 +19,7 @@ func (ah *ArticlesHandler) Run() (err error) {
 	return
 }
 
-func (ah *ArticlesHandler) Stop()
+func (ah *ArticlesHandler) Stop() {}
 
 func (ah *ArticlesHandler) get(c *gin.Context) {
 	page, size := getPageSize(c.Request)
@@ -28,15 +30,15 @@ func (ah *ArticlesHandler) get(c *gin.Context) {
 	var articles []types.ArticleListData
 	switch listType {
 	case "view":
-		articles = services.GetViewList(page, size, userId)
+		articles = ah.articlesService.GetViewList(page, size, userId)
 	case "hot":
-		articles = services.GetHotList(page, size, userId)
+		articles = ah.articlesService.GetHotList(page, size, userId)
 	case "profile":
-		articles = services.GetProfileList(page, size, userId, selfUserId)
+		articles = ah.articlesService.GetProfileList(page, size, userId, selfUserId)
 	case "tag":
-		articles = services.GetTagList(page, size, tag)
+		articles = ah.articlesService.GetTagList(page, size, tag)
 	default:
-		articles = services.GetNewestList(page, size, userId)
+		articles = ah.articlesService.GetNewestList(page, size, userId)
 	}
 
 	c.JSON(http.StatusOK, gin.H{"status": "success", "list": articles})

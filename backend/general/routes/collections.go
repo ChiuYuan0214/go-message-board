@@ -3,7 +3,7 @@ package routes
 import (
 	"encoding/json"
 	"general/routes/middleware"
-	"general/services"
+	"general/service"
 	"general/types"
 	"log"
 	"net/http"
@@ -11,14 +11,19 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func initCollections(router *gin.Engine) {
-	ch := CollectionsHandler{}
-	router.GET("/collections", middleware.Auth(), ch.get)
-	router.POST("/collections", middleware.Auth(), ch.add)
-	router.DELETE("/collections", middleware.Auth(), ch.delete)
+type CollectionsHandler struct {
+	router            Router
+	collectionService service.Collection
 }
 
-type CollectionsHandler struct{}
+func (ch *CollectionsHandler) Run() (err error) {
+	ch.router.Get("/collections", middleware.Auth(), ch.get)
+	ch.router.Post("/collections", middleware.Auth(), ch.add)
+	ch.router.Delete("/collections", middleware.Auth(), ch.delete)
+	return
+}
+
+func (ch *CollectionsHandler) Stop() {}
 
 func (ch *CollectionsHandler) get(c *gin.Context) {
 	val, _ := c.Get("userId")
@@ -28,7 +33,7 @@ func (ch *CollectionsHandler) get(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": "userId not valid."})
 		return
 	}
-	data := services.GetCollections(userId, page, size)
+	data := ch.collectionService.GetCollections(userId, page, size)
 	c.JSON(http.StatusOK, gin.H{"status": "success", "list": data})
 }
 
@@ -46,7 +51,7 @@ func (ch *CollectionsHandler) add(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": "userId and articleId cannot be empty."})
 		return
 	}
-	if !services.AddCollection(userId, body.ArticleId) {
+	if !ch.collectionService.AddCollection(userId, body.ArticleId) {
 		c.JSON(http.StatusInternalServerError, gin.H{"status": "fail", "message": "failed to add collection."})
 		return
 	}
@@ -66,7 +71,7 @@ func (ch *CollectionsHandler) delete(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": "userId and articleId cannot be empty."})
 		return
 	}
-	if !services.RemoveCollection(userId, body.ArticleId) {
+	if !ch.collectionService.RemoveCollection(userId, body.ArticleId) {
 		c.JSON(http.StatusInternalServerError, gin.H{"status": "fail", "message": "failed to remove collection."})
 		return
 	}
