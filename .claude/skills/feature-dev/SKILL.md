@@ -7,12 +7,12 @@ description: Feature development workflow for go-message-board. Guides bottom-up
 
 ## Before Anything Else — Load Context
 
-Read **`.claude/skills/feature-dev/references/README.md`** first — it points you to what to read next.
+Read **`.claude/skills/references/README.md`** first — it points you to what to read next.
 
-The references directory is structured as:
+The shared references directory is structured as:
 
 ```
-references/
+.claude/skills/references/
 ├── README.md                             ← start here
 ├── code-style/
 │   ├── go-backend.md                     ← service function patterns, route handlers, GORM, naming
@@ -26,11 +26,11 @@ references/
 ```
 
 **Loading order for a typical backend feature:**
-1. `references/project-structure/README.md` — understand service ownership, find existing functions to reuse
-2. `references/project-structure/<service>/services/<FunctionName>.md` — check exact signature when reusing
-3. `references/code-style/go-backend.md` — apply correct patterns when writing new code
+1. `.claude/skills/references/project-structure/README.md` — understand service ownership, find existing functions to reuse
+2. `.claude/skills/references/project-structure/<service>/services/<FunctionName>.md` — check exact signature when reusing
+3. `.claude/skills/references/code-style/go-backend.md` — apply correct patterns when writing new code
 
-**For frontend work:** also read `references/code-style/typescript-frontend.md`
+**For frontend work:** also read `.claude/skills/references/code-style/typescript-frontend.md`
 
 Only open actual source files when you need implementation details beyond what the reference docs show. For the full MySQL schema: `mysql/init_script.sql`.
 
@@ -142,5 +142,5 @@ Wait for explicit approval (`ok`, `好`, `繼續`, `next`, `yes`) before the nex
 ## Conventions
 
 All patterns are documented with real code examples in the reference files:
-- Go backend → `references/code-style/go-backend.md`
-- TypeScript frontend → `references/code-style/typescript-frontend.md`
+- Go backend → `.claude/skills/references/code-style/go-backend.md`
+- TypeScript frontend → `.claude/skills/references/code-style/typescript-frontend.md`

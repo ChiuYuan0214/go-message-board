@@ -2,7 +2,7 @@ package routes
 
 import (
 	"general/routes/middleware"
-	"general/services"
+	"general/service"
 	"general/utils"
 	"net/http"
 
@@ -20,13 +20,18 @@ type UpdateVoteData struct {
 	Score  int8   `json:"score"`
 }
 
-func initVote(router *gin.Engine) {
-	vh := VoteHandler{}
-	router.POST("/vote", middleware.Auth(), vh.add)
-	router.PUT("/vote", middleware.Auth(), vh.update)
+type VoteHandler struct {
+	router      Router
+	voteService service.Vote
 }
 
-type VoteHandler struct{}
+func (vh *VoteHandler) Run() (err error) {
+	vh.router.Post("/vote", middleware.Auth(), vh.add)
+	vh.router.Put("/vote", middleware.Auth(), vh.update)
+	return
+}
+
+func (vh *VoteHandler) Stop() {}
 
 func (vh *VoteHandler) add(c *gin.Context) {
 	val, _ := c.Get("userId")
@@ -45,7 +50,7 @@ func (vh *VoteHandler) add(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": "source can only be 1 or 0 or -1."})
 		return
 	}
-	message, voteIdOrStatus := services.Vote(userId, data.SourceId, data.Score, &data.VoteType)
+	message, voteIdOrStatus := vh.voteService.Vote(userId, data.SourceId, data.Score, &data.VoteType)
 	if message != "" {
 		c.JSON(int(voteIdOrStatus), gin.H{"status": "fail", "message": message})
 		return
@@ -70,7 +75,7 @@ func (vh *VoteHandler) update(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": "source can only be 1 or 0 or -1."})
 		return
 	}
-	if !services.UpdateVote(userId, data.VoteId, data.Score) {
+	if !vh.voteService.UpdateVote(userId, data.VoteId, data.Score) {
 		c.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": "userId or voteId incorrect."})
 		return
 	}

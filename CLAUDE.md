@@ -24,4 +24,4 @@ Four Go microservices + Next.js 14 frontend.
 | Writing / editing code | _(any code task)_ | `.claude/skills/code-style.md` |
 | Bug fix | `fix` `bug` `debug` `error` `crash` `修` `問題` `報錯` | `.claude/skills/bug-fix.md` |
 | Feature development | `add` `implement` `新增` `feature` `build` `做一個` | `.claude/skills/feature-dev/SKILL.md` |
-| Refactor | `refactor` `重構` `cleanup` `整理` `optimize` `優化` | `.claude/skills/refactor.md` |
+| Refactor | `refactor` `重構` `cleanup` `整理` `optimize` `優化` | `.claude/skills/refactor/SKILL.md` |

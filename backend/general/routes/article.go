@@ -3,7 +3,7 @@ package routes
 import (
 	"encoding/json"
 	"general/routes/middleware"
-	"general/services"
+	"general/service"
 	"general/types"
 	"general/utils"
 	"net/http"
@@ -13,21 +13,34 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func initArticle(router *gin.Engine) {
-	ah := ArticleHandler{}
-	router.GET("/article", ah.get)
-	router.POST("/article", middleware.Auth(), ah.add)
-	router.PUT("/article", middleware.Auth(), ah.update)
-	router.DELETE("/article", middleware.Auth(), ah.delete)
+// func initArticle(router *gin.Engine) {
+// 	ah := ArticleHandler{}
+// 	router.GET("/article", ah.get)
+// 	router.POST("/article", middleware.Auth(), ah.add)
+// 	router.PUT("/article", middleware.Auth(), ah.update)
+// 	router.DELETE("/article", middleware.Auth(), ah.delete)
+// }
+
+type ArticleHandler struct {
+	router         Router
+	articleService service.Article
 }
 
-type ArticleHandler struct{}
+func (ah *ArticleHandler) Run() (err error) {
+	ah.router.Get("/article", ah.get)
+	ah.router.Post("/article", middleware.Auth(), ah.add)
+	ah.router.Put("/article", middleware.Auth(), ah.update)
+	ah.router.Delete("/article", middleware.Auth(), ah.delete)
+	return
+}
+
+func (ah *ArticleHandler) Stop() {}
 
 func (ah *ArticleHandler) get(c *gin.Context) {
 	userId := getUserIdFromQuery(c.Request)
 	query := getQuery(c.Request)
 	id := query.Get("articleId")
-	article, status := services.GetArticle(userId, id)
+	article, status := ah.articleService.GetArticle(userId, id)
 	if status != 0 {
 		var message string
 		switch status {
@@ -42,7 +55,7 @@ func (ah *ArticleHandler) get(c *gin.Context) {
 		return
 	}
 
-	tagList := services.GetTagsByArticleId(id)
+	tagList := ah.articleService.GetTagsByArticleId(id)
 	article.Tags = tagList
 
 	c.JSON(http.StatusOK, gin.H{"status": "success", "data": article})
@@ -64,13 +77,13 @@ func (ah *ArticleHandler) add(c *gin.Context) {
 		return
 	}
 
-	id := services.InsertArticle(userId, &data, &publishTime)
+	id := ah.articleService.InsertArticle(userId, &data, &publishTime)
 	if id == 0 {
 		c.JSON(http.StatusInternalServerError, gin.H{"status": "fail", "message": "failed to insert article."})
 		return
 	}
 
-	if !services.InsertTags(id, data.Tags) {
+	if !ah.articleService.InsertTags(id, data.Tags) {
 		c.JSON(http.StatusInternalServerError, gin.H{"status": "fail", "message": "failed to insert tags."})
 		return
 	}
@@ -94,12 +107,12 @@ func (ah *ArticleHandler) update(c *gin.Context) {
 		return
 	}
 
-	message, status := services.UpdateArticle(userId, articleId, &data)
+	message, status := ah.articleService.UpdateArticle(userId, articleId, &data)
 	if message != "" {
 		c.JSON(status, gin.H{"status": "fail", "message": message})
 		return
 	}
-	if !services.DeleteRemovedTags(articleId, data.Tags) || !services.InsertTags(articleId, data.Tags) {
+	if !ah.articleService.InsertTags(articleId, data.Tags) {
 		c.JSON(http.StatusInternalServerError, gin.H{"status": "fail", "message": "failed to update tags."})
 		return
 	}
@@ -118,7 +131,7 @@ func (ah *ArticleHandler) delete(c *gin.Context) {
 		return
 	}
 
-	message, status := services.DeleteArticle(userId, articleId)
+	message, status := ah.articleService.DeleteArticle(userId, articleId)
 	if message != "" {
 		c.JSON(status, gin.H{"status": "fail", "message": message})
 		return

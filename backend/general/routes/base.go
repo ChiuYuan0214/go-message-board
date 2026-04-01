@@ -1,8 +1,6 @@
 package routes
 
 import (
-	"general/routes/middleware"
-
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
@@ -14,15 +12,14 @@ func UsePool(DB *gorm.DB) {
 }
 
 func InitRouter(router *gin.Engine) {
-	router.Use(middleware.Cors)
-	initArticle(router)
+	// router.Use(middleware.Cors)
+	// initArticle(router)
 	initArticles(router)
 	initComment(router)
 	initComments(router)
 	initProfile(router)
 	initCollections(router)
-	initVote(router)
-	initView(router)
+initView(router)
 	initFollow(router)
 	initFollower(router)
 }

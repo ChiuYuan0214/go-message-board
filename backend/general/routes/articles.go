@@ -1,7 +1,6 @@
 package routes
 
 import (
-	"general/services"
 	"general/types"
 	"general/utils"
 	"net/http"
@@ -9,12 +8,16 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func initArticles(router *gin.Engine) {
-	ah := ArticlesHandler{}
-	router.GET("/articles", ah.get)
+type ArticlesHandler struct {
+	router Router
 }
 
-type ArticlesHandler struct{}
+func (ah *ArticlesHandler) Run() (err error) {
+	ah.router.Get("/articles", ah.get)
+	return
+}
+
+func (ah *ArticlesHandler) Stop()
 
 func (ah *ArticlesHandler) get(c *gin.Context) {
 	page, size := getPageSize(c.Request)
