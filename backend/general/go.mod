@@ -1,6 +1,6 @@
 module general
 
-go 1.21.4
+go 1.26.1
 
 require (
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
@@ -11,6 +11,7 @@ require (
 )
 
 require (
+	github.com/ChiuYuan0214/depin v0.0.0-20260331073741-bbb9f9ba1a61 // indirect
 	github.com/bytedance/sonic v1.11.3 // indirect
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
 	github.com/chenzhuoyu/base64x v0.0.0-20230717121745-296ad89f973d // indirect

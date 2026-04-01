@@ -153,9 +153,16 @@ func InsertTags(articleId uint64, tags []string) bool {
 	}
 
 	tagIdList := []uint64{}
-	err = db.Model(&entities.Tag{}).Select("tag_id").Where("name in (?)", tags).
-		Where("tag_id not in (?)", db.Table("article_tag_maps").
-			Select("tag_id").Where("article_id = ?", articleId)).Find(&tagIdList).Error
+	err = db.
+		Model(&entities.Tag{}).
+		Select("tag_id").
+		Where("name in (?)", tags).
+		Where(
+			"tag_id not in (?)",
+			db.Table("article_tag_maps").
+				Select("tag_id").
+				Where("article_id = ?", articleId)).
+		Find(&tagIdList).Error
 	if err != nil {
 		return false
 	}
@@ -178,8 +185,11 @@ func DeleteRemovedTags(articleId uint64, tags []string) bool {
 	}
 
 	var deleteList []string
-	err := db.Model(&entities.Tag{}).Where("tag_id in (?)",
-		db.Table("article_tag_maps").Select("tag_id").Where("article_id = ?", articleId)).
+	err := db.
+		Model(&entities.Tag{}).
+		Where("tag_id in (?)",
+			db.Table("article_tag_maps").
+				Select("tag_id").Where("article_id = ?", articleId)).
 		Scan(&deleteList).Error
 	if err != nil {
 		return false
