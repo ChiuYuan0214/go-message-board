@@ -19,14 +19,14 @@ func (s *NotifyImpl) Run() (err error) {
 func (s *NotifyImpl) Stop() {}
 
 func (s *NotifyImpl) NotifyLogin(userId uint64) {
-	client, exist := s.chatStore.GetClient(userId)
+	client, exist := s.chatStore.FindClient(userId)
 	if !exist {
 		return
 	}
 
-	for _, id := range client.FollowerList {
-		follower, ok := s.chatStore.GetClient(id)
-		if ok && follower.IsOnline {
+	for _, id := range client.SnapshotFollowerList() {
+		follower, ok := s.chatStore.FindClient(id)
+		if ok && follower.IsActive() {
 			go follower.Write(types.Notification{
 				Event:  "follow-login",
 				UserId: userId,
@@ -34,9 +34,9 @@ func (s *NotifyImpl) NotifyLogin(userId uint64) {
 		}
 	}
 
-	for _, id := range client.FollowList {
-		follow, ok := s.chatStore.GetClient(id)
-		if ok && follow.IsOnline {
+	for _, id := range client.SnapshotFollowList() {
+		follow, ok := s.chatStore.FindClient(id)
+		if ok && follow.IsActive() {
 			go follow.Write(types.Notification{
 				Event:  "follower-login",
 				UserId: userId,
@@ -46,14 +46,14 @@ func (s *NotifyImpl) NotifyLogin(userId uint64) {
 }
 
 func (s *NotifyImpl) NotifyLogout(userId uint64) {
-	client, exist := s.chatStore.GetClient(userId)
+	client, exist := s.chatStore.FindClient(userId)
 	if !exist {
 		return
 	}
 
-	for _, id := range client.FollowerList {
-		follower, ok := s.chatStore.GetClient(id)
-		if ok && follower.IsOnline {
+	for _, id := range client.SnapshotFollowerList() {
+		follower, ok := s.chatStore.FindClient(id)
+		if ok && follower.IsActive() {
 			go follower.Write(types.Notification{
 				Event:  "follow-logout",
 				UserId: userId,
@@ -61,9 +61,9 @@ func (s *NotifyImpl) NotifyLogout(userId uint64) {
 		}
 	}
 
-	for _, id := range client.FollowList {
-		follow, ok := s.chatStore.GetClient(id)
-		if ok && follow.IsOnline {
+	for _, id := range client.SnapshotFollowList() {
+		follow, ok := s.chatStore.FindClient(id)
+		if ok && follow.IsActive() {
 			go follow.Write(types.Notification{
 				Event:  "follower-logout",
 				UserId: userId,

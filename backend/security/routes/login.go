@@ -16,26 +16,39 @@ type RefreshData struct {
 	Token  string `json:"token"`
 }
 
-var loginMap MethodMapType = map[string]HandlerType{}
-
-func init() {
-	loginMap.post(login).put(refreshToken)
+type LoginHandler struct {
+	router      Router
+	authService services.Auth
+	loginMap    MethodMapType
 }
 
-func handleLogin(writer http.ResponseWriter, req *http.Request) {
+func NewLoginHandler(router Router, authService services.Auth) *LoginHandler {
+	return &LoginHandler{
+		router:      router,
+		authService: authService,
+	}
+}
+
+func (h *LoginHandler) Run() {
+	h.loginMap = make(MethodMapType)
+	h.loginMap.post(h.login).put(h.refreshToken)
+	h.router.Handle("/login", h.handleLogin)
+}
+
+func (h *LoginHandler) handleLogin(writer http.ResponseWriter, req *http.Request) {
 	setHeader(writer, "json")
-	res, status := loginMap.useHandler(writer, req)
+	res, status := h.loginMap.useHandler(writer, req)
 	DoResponse(res, status, writer)
 }
 
-func login(req *http.Request) (res interface{}, statusCode int) {
+func (h *LoginHandler) login(req *http.Request) (res interface{}, statusCode int) {
 	data := &LoginData{}
 	message, status := utils.ParseBody(req.Body, data)
 	if message != "" {
 		return newRes("fail").message(message), status
 	}
 
-	userId, token := services.Login(data.Email, data.Password)
+	userId, token := h.authService.Login(data.Email, data.Password)
 	if userId == 0 {
 		return newRes("fail").message("account not exist"), http.StatusOK
 	}
@@ -46,7 +59,7 @@ func login(req *http.Request) (res interface{}, statusCode int) {
 	return newRes("success").setItem("userId", userId).setItem("token", token.Token).setItem("expireTime", token.ExpireTime), http.StatusOK
 }
 
-func refreshToken(req *http.Request) (res interface{}, statusCode int) {
+func (h *LoginHandler) refreshToken(req *http.Request) (res interface{}, statusCode int) {
 	data := &RefreshData{}
 	message, status := utils.ParseBody(req.Body, data)
 	if message != "" {
@@ -57,10 +70,10 @@ func refreshToken(req *http.Request) (res interface{}, statusCode int) {
 		return newRes("fail").message("userId and token cannot be empty"), http.StatusBadRequest
 	}
 
-	if !services.VerifyToken(data.UserId, data.Token) {
+	if !h.authService.VerifyToken(data.UserId, data.Token) {
 		return newRes("fail").message("token was incorrect."), http.StatusBadRequest
 	}
 
-	token := services.GenerateToken(data.UserId)
+	token := h.authService.GenerateToken(data.UserId)
 	return newRes("success").setItem("token", token.Token).setItem("expireTime", token.ExpireTime), http.StatusOK
 }

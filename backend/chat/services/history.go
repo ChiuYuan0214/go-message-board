@@ -49,7 +49,7 @@ func (s *HistoryImpl) GetHistory(event *types.RequestEvent) {
 	history.UserHistory = *(<-userHisChan)
 	history.TargetHistory = *(<-targetHisChan)
 
-	client, ok := s.chatStore.GetClient(event.UserId)
+	client, ok := s.chatStore.FindClient(event.UserId)
 	if !ok {
 		return
 	}
@@ -73,7 +73,7 @@ func (s *HistoryImpl) getList(startTime time.Time, endTime time.Time, senderId u
 		}
 		dbList := s.translateMessages(chats)
 		newList := append(sendMap.GetMessages(receiverId), dbList...)
-		var filteredList []types.Message
+		filteredList := make([]types.Message, 0)
 		count := 0
 		for _, m := range newList {
 			msgTime := time.Unix(0, m.Time)

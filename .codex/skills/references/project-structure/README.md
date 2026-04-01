@@ -109,15 +109,29 @@ Use this file as the entry point for feature planning:
 
 ### Layer Map
 
-- `infra/setup`: MySQL, Redis, server bootstrap
-- `store/services`: user lookup, auth, profile, registration flows
-- `routes`: register, verify-code, login, update-password, update-profile, users
+- `infra`: MySQL (`infra.RDB`), Redis (`infra.Cache`)
+- `repo`: auth, register, profile, user
+- `store`: in-memory active user directory
+- `jobs`: user directory sync from MySQL
+- `services`: auth, register, profile, user directory
+- `routes`: register, verify-code, login, update-password, update-profile, upload-image, users
 
-### Infra and Persistence Index
+### Wiring Index
 
-- `setup`: `setup/db.go`, `setup/cache.go`, `setup/server.go`
+- `infra`: `infra/db.go`, `infra/cache.go`, `infra/interface.go`
+- `repo`: `repo/auth.go`, `repo/register.go`, `repo/profile.go`, `repo/user.go`, `repo/interface.go`
 - `store`: `store/users.go`
-- `services`: `services/login.go`, `services/register.go`, `services/profile.go`, `services/common.go`, `services/base.go`
+- `jobs`: `jobs/init-users.go`
+- `services`: `services/login.go`, `services/register.go`, `services/profile.go`, `services/common.go`, `services/interface.go`
+- `routes`: `routes/base.go`, `routes/interface.go`, `routes/login.go`, `routes/register.go`, `routes/resend-veri-code.go`, `routes/verfiy-code.go`, `routes/update-password.go`, `routes/update-profile.go`, `routes/upload-image.go`, `routes/users.go`, `routes/interceptor.go`
+
+### Wiring Notes
+
+- `main.go` now wires concrete infra -> repo -> services -> jobs -> routes instances directly instead of using package-level `UsePool` / `UseCache` globals.
+- `repo` owns MySQL / Redis access for auth, register, profile, and user-directory reads.
+- `store.UsersStore` owns the in-memory user list used by `/users`.
+- `jobs.UsersSyncJob` refreshes the in-memory user directory through `repo.User`.
+- Security is not on depin yet, but the runtime dependencies are now explicit and injected.
 
 ### Services
 | File | Function |
@@ -258,5 +272,5 @@ Use this file as the entry point for feature planning:
 These source areas exist in the repo but do not yet have enough leaf references for fast planning. Prefer adding them when touching the related area:
 
 - `general`: `infra/*`, `repo/*`, `service/*`, shared route plumbing such as `routes/router.go`, `routes/interface.go`, `routes/utils.go`, `routes/follows.go`
-- `security`: `setup/*`, `store/users.go`, shared route helpers/interceptors, and service layer files that are not yet indexed by structure
+- `security`: `infra/*`, `store/users.go`, shared route helpers/interceptors, and service layer files that are not yet indexed by structure
 - `stream`: `store/stream.go`, route files, and most service/type files still need structure-level references

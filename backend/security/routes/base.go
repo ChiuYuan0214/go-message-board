@@ -1,26 +1,26 @@
 package routes
 
 import (
-	"database/sql"
+	"fmt"
+	"log"
 	"net/http"
+	"security/constants"
 )
 
-var connPool *sql.DB
+var _ Router = (*RouterImpl)(nil)
 
-func UsePool(db *sql.DB) {
-	connPool = db
+type RouterImpl struct{}
+
+func (r *RouterImpl) Handle(pattern string, handler http.HandlerFunc) {
+	http.HandleFunc(pattern, handler)
 }
 
-func UseDispatcher() {
-	http.HandleFunc("/register", handleRegister)
-	http.HandleFunc("/verifyCode", handleVerifyCode)
-	http.HandleFunc("/resendVerificationCode", handleResendCode)
-	http.HandleFunc("/login", handleLogin)
-	http.HandleFunc("/updatePassword", authMiddle(handleUpdatePassword))
-	http.HandleFunc("/updateProfile", authMiddle(handleUpdateProfile))
-	http.HandleFunc("/uploadImage", authMiddle(handleUploadImage))
-	http.HandleFunc("/users", authMiddle(handleUsers))
-
+func (r *RouterImpl) HandleStatic() {
 	fs := http.FileServer(http.Dir("./uploads/images/"))
 	http.Handle("/uploads/images/", http.StripPrefix("/uploads/images/", fs))
+}
+
+func (r *RouterImpl) Serve() {
+	fmt.Printf("Server listening on :%s...\n", constants.PORT)
+	log.Println(http.ListenAndServe(fmt.Sprintf(":%s", constants.PORT), nil))
 }

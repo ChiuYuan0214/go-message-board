@@ -63,6 +63,7 @@ func (sm *SendMap) GetCacheMessages(receiverId uint64, startTime time.Time, endT
 }
 
 type Client struct {
+	StateLock    sync.RWMutex
 	UserId       uint64
 	Username     string
 	Conn         *websocket.Conn
@@ -75,15 +76,136 @@ type Client struct {
 	LogoutTime   time.Time
 }
 
-func (c *Client) Logout() {
+func (c *Client) InitSession(conn *websocket.Conn, token string) {
+	c.StateLock.Lock()
+	c.Conn = conn
+	c.Token = token
+	c.IsOnline = true
+	c.StateLock.Unlock()
+}
+
+func (c *Client) ReplaceFollowerList(list []uint64) {
+	c.StateLock.Lock()
+	c.FollowerList = list
+	c.StateLock.Unlock()
+}
+
+func (c *Client) ReplaceFollowList(list []uint64) {
+	c.StateLock.Lock()
+	c.FollowList = list
+	c.StateLock.Unlock()
+}
+
+func (c *Client) SnapshotFollowerList() []uint64 {
+	c.StateLock.RLock()
+	defer c.StateLock.RUnlock()
+
+	return append([]uint64(nil), c.FollowerList...)
+}
+
+func (c *Client) SnapshotFollowList() []uint64 {
+	c.StateLock.RLock()
+	defer c.StateLock.RUnlock()
+
+	return append([]uint64(nil), c.FollowList...)
+}
+
+func (c *Client) AddFollow(targetUserId uint64) bool {
+	c.StateLock.Lock()
+	defer c.StateLock.Unlock()
+
+	for _, id := range c.FollowList {
+		if id == targetUserId {
+			return false
+		}
+	}
+
+	c.FollowList = append(c.FollowList, targetUserId)
+	return true
+}
+
+func (c *Client) RemoveFollow(targetUserId uint64) {
+	c.StateLock.Lock()
+	defer c.StateLock.Unlock()
+
+	var newList []uint64
+	for _, id := range c.FollowList {
+		if id != targetUserId {
+			newList = append(newList, id)
+		}
+	}
+	c.FollowList = newList
+}
+
+func (c *Client) RemoveFollower(targetUserId uint64) {
+	c.StateLock.Lock()
+	defer c.StateLock.Unlock()
+
+	var newList []uint64
+	for _, id := range c.FollowerList {
+		if id != targetUserId {
+			newList = append(newList, id)
+		}
+	}
+	c.FollowerList = newList
+}
+
+func (c *Client) TokenValue() string {
+	c.StateLock.RLock()
+	defer c.StateLock.RUnlock()
+
+	return c.Token
+}
+
+func (c *Client) IsActive() bool {
+	c.StateLock.RLock()
+	defer c.StateLock.RUnlock()
+
+	return c.IsOnline
+}
+
+func (c *Client) LogoutSnapshot() (bool, time.Time) {
+	c.StateLock.RLock()
+	defer c.StateLock.RUnlock()
+
+	return c.IsOnline, c.LogoutTime
+}
+
+func (c *Client) CloseSession() {
+	c.StateLock.Lock()
 	c.IsOnline = false
 	c.LogoutTime = time.Now()
-	c.Conn.Close()
+	conn := c.Conn
+	c.StateLock.Unlock()
+
+	if conn != nil {
+		conn.Close()
+	}
+}
+
+func (c *Client) Read(v interface{}) error {
+	c.StateLock.RLock()
+	conn := c.Conn
+	c.StateLock.RUnlock()
+
+	if conn == nil {
+		return websocket.ErrCloseSent
+	}
+
+	return conn.ReadJSON(v)
 }
 
 func (c *Client) Write(v interface{}) bool {
+	c.StateLock.RLock()
+	conn := c.Conn
+	c.StateLock.RUnlock()
+
+	if conn == nil {
+		return false
+	}
+
 	c.ConnLock.Lock()
-	err := c.Conn.WriteJSON(v)
+	err := conn.WriteJSON(v)
 	c.ConnLock.Unlock()
 	if err != nil {
 		log.Println(err)

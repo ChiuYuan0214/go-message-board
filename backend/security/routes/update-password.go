@@ -11,19 +11,44 @@ type UpdatePassData struct {
 	NewPassword string `json:"newPassword"`
 }
 
-var updatePassMap MethodMapType = map[string]HandlerType{}
-
-func init() {
-	updatePassMap.put(updatePassword)
+type ProfileHandler struct {
+	router         Router
+	authService    services.Auth
+	profileService services.Profile
+	updatePassMap  MethodMapType
+	updateProfMap  MethodMapType
+	uploadImageMap MethodMapType
 }
 
-func handleUpdatePassword(writer http.ResponseWriter, req *http.Request) {
+func NewProfileHandler(router Router, authService services.Auth, profileService services.Profile) *ProfileHandler {
+	return &ProfileHandler{
+		router:         router,
+		authService:    authService,
+		profileService: profileService,
+	}
+}
+
+func (h *ProfileHandler) Run() {
+	h.updatePassMap = make(MethodMapType)
+	h.updateProfMap = make(MethodMapType)
+	h.uploadImageMap = make(MethodMapType)
+
+	h.updatePassMap.put(h.updatePassword)
+	h.updateProfMap.post(h.updateProfileInfo)
+	h.uploadImageMap.post(h.upload)
+
+	h.router.Handle("/updatePassword", authMiddle(h.authService, h.handleUpdatePassword))
+	h.router.Handle("/updateProfile", authMiddle(h.authService, h.handleUpdateProfile))
+	h.router.Handle("/uploadImage", authMiddle(h.authService, h.handleUploadImage))
+}
+
+func (h *ProfileHandler) handleUpdatePassword(writer http.ResponseWriter, req *http.Request) {
 	setHeader(writer, "json")
-	res, status := updatePassMap.useHandler(writer, req)
+	res, status := h.updatePassMap.useHandler(writer, req)
 	DoResponse(res, status, writer)
 }
 
-func updatePassword(req *http.Request) (res interface{}, statusCode int) {
+func (h *ProfileHandler) updatePassword(req *http.Request) (res interface{}, statusCode int) {
 	userId := getUserIdFromContext(req)
 	data := &UpdatePassData{}
 	message, status := utils.ParseBody(req.Body, data)
@@ -35,11 +60,11 @@ func updatePassword(req *http.Request) (res interface{}, statusCode int) {
 		return newRes("fail").message("userId, old password and new password cannot be empty"), http.StatusBadRequest
 	}
 
-	if !services.VerifyPasswordByUserId(&userId, &data.OldPassword) {
+	if !h.profileService.VerifyPasswordByUserId(&userId, &data.OldPassword) {
 		return newRes("fail").message("userId or old password incorrect."), http.StatusOK
 	}
 
-	if !services.UpdatePassword(&userId, &data.NewPassword) {
+	if !h.profileService.UpdatePassword(&userId, &data.NewPassword) {
 		return newRes("fail").message("failed to update password."), http.StatusInternalServerError
 	}
 

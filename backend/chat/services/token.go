@@ -24,6 +24,10 @@ func (s *TokenImpl) Run() (err error) {
 func (s *TokenImpl) Stop() {}
 
 func (s *TokenImpl) ValidateToken(token string, userId uint64) bool {
+	if token == "" || userId == 0 {
+		return false
+	}
+
 	actualToken, err := s.tokenRepo.GetToken(userId)
 	if err != nil {
 		log.Println(err)
@@ -33,14 +37,19 @@ func (s *TokenImpl) ValidateToken(token string, userId uint64) bool {
 }
 
 func (s *TokenImpl) UseTokenChecker(ctx context.Context, cancel context.CancelFunc, userId uint64) {
-	client, _ := s.chatStore.GetClient(userId)
+	client, ok := s.chatStore.FindClient(userId)
+	if !ok {
+		cancel()
+		return
+	}
+
 	for {
 		time.Sleep(time.Minute * 10)
 		select {
 		case <-ctx.Done():
 			return
 		default:
-			if !s.ValidateToken(client.Token, userId) {
+			if !s.ValidateToken(client.TokenValue(), userId) {
 				client.Write(types.ServerMessage{
 					Event:   "error",
 					Content: "token invalid.",

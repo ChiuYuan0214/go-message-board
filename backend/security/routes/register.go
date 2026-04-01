@@ -10,19 +10,44 @@ import (
 	"time"
 )
 
-var registerMap MethodMapType = map[string]HandlerType{}
-
-func init() {
-	registerMap.post(newRegister)
+type RegisterHandler struct {
+	router          Router
+	registerService services.Register
+	authService     services.Auth
+	registerMap     MethodMapType
+	verifyMap       MethodMapType
+	resendCodeMap   MethodMapType
 }
 
-func handleRegister(writer http.ResponseWriter, req *http.Request) {
+func NewRegisterHandler(router Router, registerService services.Register, authService services.Auth) *RegisterHandler {
+	return &RegisterHandler{
+		router:          router,
+		registerService: registerService,
+		authService:     authService,
+	}
+}
+
+func (h *RegisterHandler) Run() {
+	h.registerMap = make(MethodMapType)
+	h.verifyMap = make(MethodMapType)
+	h.resendCodeMap = make(MethodMapType)
+
+	h.registerMap.post(h.newRegister)
+	h.verifyMap.post(h.doVerify)
+	h.resendCodeMap.post(h.resendCode)
+
+	h.router.Handle("/register", h.handleRegister)
+	h.router.Handle("/verifyCode", h.handleVerifyCode)
+	h.router.Handle("/resendVerificationCode", h.handleResendCode)
+}
+
+func (h *RegisterHandler) handleRegister(writer http.ResponseWriter, req *http.Request) {
 	setHeader(writer, "json")
-	res, status := registerMap.useHandler(writer, req)
+	res, status := h.registerMap.useHandler(writer, req)
 	DoResponse(res, status, writer)
 }
 
-func newRegister(req *http.Request) (res interface{}, statusCode int) {
+func (h *RegisterHandler) newRegister(req *http.Request) (res interface{}, statusCode int) {
 	data := &types.RegisterData{}
 	message, status := utils.ParseBody(req.Body, data)
 	if message != "" {
@@ -35,7 +60,7 @@ func newRegister(req *http.Request) (res interface{}, statusCode int) {
 		return newRes("fail").message("username, email and password cannot be empty."), http.StatusBadRequest
 	}
 
-	isExist := services.CheckEmailExist(email)
+	isExist := h.registerService.CheckEmailExist(email)
 	if isExist {
 		return newRes("fail").message("user already exist"), http.StatusBadRequest
 	}
@@ -54,7 +79,7 @@ func newRegister(req *http.Request) (res interface{}, statusCode int) {
 		hashedPassword, err := utils.HashPassword(data.Password)
 		isErr(err)
 		// insert user info into database
-		userId = services.AddNewUser(username, email, hashedPassword, data.Phone, data.Job, data.Address)
+		userId = h.registerService.AddNewUser(username, email, hashedPassword, data.Phone, data.Job, data.Address)
 		userIdChan <- userId
 		close(userIdChan)
 	}()
@@ -70,9 +95,9 @@ func newRegister(req *http.Request) (res interface{}, statusCode int) {
 			return
 		}
 		// insert verification code into database
-		codeId = services.InsertVerificationCode(userId, veriCode.Code, veriCode.ExpireTime)
+		codeId = h.registerService.InsertVerificationCode(userId, veriCode.Code, veriCode.ExpireTime)
 		expireTime = veriCode.ExpireTime
-		services.ScheduleCodeInvalidation(codeId, veriCode)
+		h.registerService.ScheduleCodeInvalidation(codeId, veriCode)
 	}()
 
 	wg.Wait()

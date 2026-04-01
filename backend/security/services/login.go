@@ -2,6 +2,7 @@ package services
 
 import (
 	"security/constants"
+	"security/repo"
 	"security/types"
 	"security/utils"
 	"time"
@@ -9,19 +10,30 @@ import (
 	"github.com/dgrijalva/jwt-go"
 )
 
-func Login(email string, password string) (userId uint64, token *types.Token) {
+var _ Auth = (*AuthImpl)(nil)
+
+type AuthImpl struct {
+	authRepo repo.Auth
+}
+
+func NewAuth(authRepo repo.Auth) *AuthImpl {
+	return &AuthImpl{
+		authRepo: authRepo,
+	}
+}
+
+func (s *AuthImpl) Login(email string, password string) (userId uint64, token *types.Token) {
 	var hashedPassword string
-	row := connPool.QueryRow("select user_id, password from users where email = ?", email)
-	row.Scan(&userId, &hashedPassword)
+	userId, hashedPassword, _ = s.authRepo.GetLoginCredentialByEmail(email)
 	matched := utils.VerifyPassword(&hashedPassword, &password)
 	if !matched {
 		return 0, nil
 	}
-	token = GenerateToken(userId)
+	token = s.GenerateToken(userId)
 	return userId, token
 }
 
-func GenerateToken(userId uint64) *types.Token {
+func (s *AuthImpl) GenerateToken(userId uint64) *types.Token {
 	expireTime := time.Now().Add(30 * time.Minute).Unix()
 	claims := jwt.MapClaims{
 		"sub": userId,
@@ -34,20 +46,22 @@ func GenerateToken(userId uint64) *types.Token {
 		return nil
 	}
 	token := types.Token{Token: tokenString, ExpireTime: expireTime}
-	cache.SetToken(userId, token)
+	if err = s.authRepo.SetToken(userId, token); err != nil {
+		return nil
+	}
 
 	return &token
 }
 
-func VerifyToken(userId uint64, token string) bool {
-	actualToken, err := cache.GetToken(userId)
+func (s *AuthImpl) VerifyToken(userId uint64, token string) bool {
+	actualToken, err := s.authRepo.GetToken(userId)
 	if err != nil || token != actualToken {
 		return false
 	}
 	return true
 }
 
-func GetUserIdFromToken(srcToken string) uint64 {
+func (s *AuthImpl) GetUserIdFromToken(srcToken string) uint64 {
 	token, err := jwt.Parse(srcToken, func(t *jwt.Token) (interface{}, error) {
 		return []byte(constants.JWT_HS256_SECRET_KEY), nil
 	})

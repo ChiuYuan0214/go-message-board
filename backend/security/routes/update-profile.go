@@ -2,11 +2,8 @@ package routes
 
 import (
 	"net/http"
-	"security/services"
 	"security/utils"
 )
-
-var updateProfileMap MethodMapType = map[string]HandlerType{}
 
 type UpdateProfileData struct {
 	Username string `json:"username"`
@@ -15,17 +12,13 @@ type UpdateProfileData struct {
 	Address  string `json:"address"`
 }
 
-func init() {
-	updateProfileMap.post(updateProfileInfo)
-}
-
-func handleUpdateProfile(writer http.ResponseWriter, req *http.Request) {
+func (h *ProfileHandler) handleUpdateProfile(writer http.ResponseWriter, req *http.Request) {
 	setHeader(writer, "json")
-	res, status := updateProfileMap.useHandler(writer, req)
+	res, status := h.updateProfMap.useHandler(writer, req)
 	DoResponse(res, status, writer)
 }
 
-func updateProfileInfo(req *http.Request) (res interface{}, statusCode int) {
+func (h *ProfileHandler) updateProfileInfo(req *http.Request) (res interface{}, statusCode int) {
 	userId := getUserIdFromContext(req)
 	data := UpdateProfileData{}
 	message, status := utils.ParseBody(req.Body, &data)
@@ -33,7 +26,7 @@ func updateProfileInfo(req *http.Request) (res interface{}, statusCode int) {
 		return newRes("fail").message(message), status
 	}
 
-	message, status = services.UpdateColumnsById(data, &userId)
+	message, status = h.profileService.UpdateColumnsById(data, &userId)
 	if message != "" {
 		return newRes("fail").message(message), status
 	}

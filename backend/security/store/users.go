@@ -8,21 +8,34 @@ type User struct {
 	UserImage string `json:"userImage"`
 }
 
-var usersLock = sync.Mutex{}
-var users = []User{}
-
-func GetUsers() []User {
-	return users
+type UsersStore struct {
+	usersLock sync.RWMutex
+	users     []User
 }
 
-func AddUser(user User) {
-	usersLock.Lock()
-	defer usersLock.Unlock()
-	users = append(users, user)
+func NewUsersStore() *UsersStore {
+	return &UsersStore{
+		users: make([]User, 0),
+	}
 }
 
-func SetUsers(newUsers []User) {
-	usersLock.Lock()
-	defer usersLock.Unlock()
-	users = newUsers
+func (s *UsersStore) GetUsers() []User {
+	s.usersLock.RLock()
+	defer s.usersLock.RUnlock()
+
+	return append([]User(nil), s.users...)
+}
+
+func (s *UsersStore) AddUser(user User) {
+	s.usersLock.Lock()
+	defer s.usersLock.Unlock()
+
+	s.users = append(s.users, user)
+}
+
+func (s *UsersStore) SetUsers(newUsers []User) {
+	s.usersLock.Lock()
+	defer s.usersLock.Unlock()
+
+	s.users = append([]User(nil), newUsers...)
 }

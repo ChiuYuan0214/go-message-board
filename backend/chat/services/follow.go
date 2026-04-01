@@ -19,20 +19,16 @@ func (s *FollowImpl) Run() (err error) {
 func (s *FollowImpl) Stop() {}
 
 func (s *FollowImpl) AddFollow(event *types.RequestEvent) {
-	client, ok := s.chatStore.GetClient(event.UserId)
+	client, ok := s.chatStore.FindClient(event.UserId)
 	if !ok {
 		return
 	}
-	followList := client.FollowList
-	for _, id := range followList {
-		if id == event.TargetUserId {
-			return
-		}
+	if !client.AddFollow(event.TargetUserId) {
+		return
 	}
-	client.FollowList = append(followList, event.TargetUserId)
 
-	target, ok := s.chatStore.GetClient(event.TargetUserId)
-	if !ok || !target.IsOnline {
+	target, ok := s.chatStore.FindClient(event.TargetUserId)
+	if !ok || !target.IsActive() {
 		return
 	}
 	client.Write(types.Notification{
@@ -42,29 +38,17 @@ func (s *FollowImpl) AddFollow(event *types.RequestEvent) {
 }
 
 func (s *FollowImpl) RemoveFollow(event *types.RequestEvent) {
-	client, ok := s.chatStore.GetClient(event.UserId)
+	client, ok := s.chatStore.FindClient(event.UserId)
 	if !ok {
 		return
 	}
-	var newList []uint64
-	for _, id := range client.FollowList {
-		if id != event.TargetUserId {
-			newList = append(newList, id)
-		}
-	}
-	client.FollowList = newList
+	client.RemoveFollow(event.TargetUserId)
 }
 
 func (s *FollowImpl) RemoveFollower(event *types.RequestEvent) {
-	client, ok := s.chatStore.GetClient(event.UserId)
+	client, ok := s.chatStore.FindClient(event.UserId)
 	if !ok {
 		return
 	}
-	var newList []uint64
-	for _, id := range client.FollowerList {
-		if id != event.TargetUserId {
-			newList = append(newList, id)
-		}
-	}
-	client.FollowerList = newList
+	client.RemoveFollower(event.TargetUserId)
 }

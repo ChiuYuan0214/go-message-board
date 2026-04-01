@@ -2,31 +2,60 @@ package store
 
 import (
 	"chat/types"
+	"sync"
 )
 
 type ChatStore struct {
-	Clients   *(map[uint64]*types.Client)
+	mu        sync.RWMutex
+	clients   map[uint64]*types.Client
 	Broadcast chan *types.RequestEvent
 }
 
-func (cs *ChatStore) CreateClient(userId uint64) {
-	(*cs.Clients)[userId] = &types.Client{
-		UserId:  userId,
-		SendMap: new(types.SendMap),
+func (cs *ChatStore) CreateClient(userId uint64) *types.Client {
+	client := &types.Client{
+		StateLock: sync.RWMutex{},
+		UserId:    userId,
+		SendMap:   new(types.SendMap),
 	}
+	cs.clients[userId] = client
+	return client
 }
 
 func (cs *ChatStore) GetClient(userId uint64) (*types.Client, bool) {
-	_, ok := (*cs.Clients)[userId]
+	cs.mu.Lock()
+	defer cs.mu.Unlock()
+
+	client, ok := cs.clients[userId]
 	if !ok {
-		cs.CreateClient(userId)
+		client = cs.CreateClient(userId)
 	}
-	c := (*cs.Clients)[userId]
-	return c, ok
+	return client, ok
+}
+
+func (cs *ChatStore) FindClient(userId uint64) (*types.Client, bool) {
+	cs.mu.RLock()
+	defer cs.mu.RUnlock()
+
+	client, ok := cs.clients[userId]
+	return client, ok
+}
+
+func (cs *ChatStore) SnapshotClients() map[uint64]*types.Client {
+	cs.mu.RLock()
+	defer cs.mu.RUnlock()
+
+	snapshot := make(map[uint64]*types.Client, len(cs.clients))
+	for userId, client := range cs.clients {
+		snapshot[userId] = client
+	}
+	return snapshot
 }
 
 func (cs *ChatStore) DeleteClient(userId uint64) {
-	delete(*cs.Clients, userId)
+	cs.mu.Lock()
+	defer cs.mu.Unlock()
+
+	delete(cs.clients, userId)
 }
 
 func (cs *ChatStore) GetSendMap(userId uint64) *types.SendMap {
@@ -37,7 +66,7 @@ func (cs *ChatStore) GetSendMap(userId uint64) *types.SendMap {
 var chatStore ChatStore
 
 func init() {
-	chatStore.Clients = &map[uint64]*types.Client{}
+	chatStore.clients = map[uint64]*types.Client{}
 	chatStore.Broadcast = make(chan *types.RequestEvent)
 }
 

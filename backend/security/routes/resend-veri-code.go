@@ -2,7 +2,6 @@ package routes
 
 import (
 	"net/http"
-	"security/services"
 	"security/utils"
 )
 
@@ -11,19 +10,13 @@ type ResendCodeData struct {
 	Password string `json:"password"`
 }
 
-var resendCodeMap MethodMapType = map[string]HandlerType{}
-
-func init() {
-	resendCodeMap.post(resendCode)
-}
-
-func handleResendCode(writer http.ResponseWriter, req *http.Request) {
+func (h *RegisterHandler) handleResendCode(writer http.ResponseWriter, req *http.Request) {
 	setHeader(writer, "json")
-	res, status := resendCodeMap.useHandler(writer, req)
+	res, status := h.resendCodeMap.useHandler(writer, req)
 	DoResponse(res, status, writer)
 }
 
-func resendCode(req *http.Request) (res interface{}, statusCode int) {
+func (h *RegisterHandler) resendCode(req *http.Request) (res interface{}, statusCode int) {
 	data := &ResendCodeData{}
 	message, status := utils.ParseBody(req.Body, data)
 	if message != "" {
@@ -34,7 +27,7 @@ func resendCode(req *http.Request) (res interface{}, statusCode int) {
 		return newRes("fail").message("email and password cannot be empty."), http.StatusBadRequest
 	}
 
-	userId := services.VerifyPasswordByEmail(&data.Email, &data.Password)
+	userId := h.registerService.VerifyPasswordByEmail(&data.Email, &data.Password)
 	if userId == 0 {
 		return newRes("fail").message("password incorrect"), http.StatusBadRequest
 	}
@@ -44,15 +37,15 @@ func resendCode(req *http.Request) (res interface{}, statusCode int) {
 
 	veriCode := utils.GenerateCode()
 	isSent := utils.SendVerifyCode(data.Email, veriCode.Code)
-	if !isSent || !services.InvalidateVerificationCodes(userId) {
+	if !isSent || !h.registerService.InvalidateVerificationCodes(userId) {
 		return newRes("fail").message("failed to send code."), http.StatusInternalServerError
 	}
 
-	codeId := services.InsertVerificationCode(userId, veriCode.Code, veriCode.ExpireTime)
+	codeId := h.registerService.InsertVerificationCode(userId, veriCode.Code, veriCode.ExpireTime)
 	if codeId == 0 {
 		return newRes("fail").message("failed to record verification code."), http.StatusInternalServerError
 	}
-	services.ScheduleCodeInvalidation(codeId, veriCode)
+	h.registerService.ScheduleCodeInvalidation(codeId, veriCode)
 
 	return newRes("success").setItem("expireTime", veriCode.ExpireTime), http.StatusOK
 }

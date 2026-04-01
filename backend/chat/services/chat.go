@@ -26,27 +26,15 @@ func (s *ChatImpl) Run() (err error) {
 func (s *ChatImpl) Stop() {}
 
 func (s *ChatImpl) InitChatClient(conn *websocket.Conn, userId uint64, token string) {
-	clients := s.chatStore.Clients
-	client, exist := (*clients)[userId]
+	client, exist := s.chatStore.GetClient(userId)
 	if !exist {
-		newClient := &types.Client{
-			UserId:   userId,
-			Username: "",
-			Conn:     conn,
-			ConnLock: sync.Mutex{},
-			Token:    token,
-			IsOnline: true,
-			SendMap: &types.SendMap{
-				Lock:  sync.Mutex{},
-				Store: sync.Map{},
-			},
+		client.Username = ""
+		client.SendMap = &types.SendMap{
+			Lock:  sync.Mutex{},
+			Store: sync.Map{},
 		}
-		(*clients)[userId] = newClient
-	} else {
-		(*client).Conn = conn
-		(*client).Token = token
-		(*client).IsOnline = true
 	}
+	client.InitSession(conn, token)
 
 	go func() {
 		var wg sync.WaitGroup
@@ -60,15 +48,18 @@ func (s *ChatImpl) InitChatClient(conn *websocket.Conn, userId uint64, token str
 }
 
 func (s *ChatImpl) ListenChatEvent(ctx context.Context, cancel context.CancelFunc, userId uint64) {
-	clients := s.chatStore.Clients
 	broadcast := s.chatStore.Broadcast
-	client := (*clients)[userId]
+	client, ok := s.chatStore.FindClient(userId)
+	if !ok {
+		cancel()
+		return
+	}
 
 	defer func() {
-		if _, ok := (*clients)[userId]; ok {
+		if _, ok := s.chatStore.FindClient(userId); ok {
 			s.notifyService.NotifyLogout(userId)
 		}
-		client.Logout()
+		client.CloseSession()
 	}()
 
 	for {
@@ -77,13 +68,10 @@ func (s *ChatImpl) ListenChatEvent(ctx context.Context, cancel context.CancelFun
 			return
 		default:
 			var msg types.RequestEvent
-			err := client.Conn.ReadJSON(&msg)
+			err := client.Read(&msg)
 			if err != nil {
-				if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
-					go s.notifyService.NotifyLogout(userId)
-				}
 				log.Println(err)
-				client.Logout()
+				client.CloseSession()
 				cancel()
 				return
 			}

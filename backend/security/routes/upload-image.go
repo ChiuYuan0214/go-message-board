@@ -4,24 +4,17 @@ import (
 	"fmt"
 	"net/http"
 	"path/filepath"
-	"security/services"
 	"security/utils"
 	"strconv"
 )
 
-var uploadImageMap MethodMapType = map[string]HandlerType{}
-
-func init() {
-	uploadImageMap.post(upload)
-}
-
-func handleUploadImage(writer http.ResponseWriter, req *http.Request) {
+func (h *ProfileHandler) handleUploadImage(writer http.ResponseWriter, req *http.Request) {
 	setHeader(writer, "json")
-	res, status := uploadImageMap.useHandler(writer, req)
+	res, status := h.uploadImageMap.useHandler(writer, req)
 	DoResponse(res, status, writer)
 }
 
-func upload(req *http.Request) (res interface{}, statusCode int) {
+func (h *ProfileHandler) upload(req *http.Request) (res interface{}, statusCode int) {
 	userId := getUserIdFromContext(req)
 	err := req.ParseMultipartForm(10 << 19)
 	if isErr(err) {
@@ -43,7 +36,7 @@ func upload(req *http.Request) (res interface{}, statusCode int) {
 		return newRes("fail").message("something went wrong."), http.StatusInternalServerError
 	}
 
-	if message, status := services.InsertProfileImageInfo(&userId, &fileName, &desc); status != 0 {
+	if message, status := h.profileService.InsertProfileImageInfo(&userId, &fileName, &desc); status != 0 {
 		return newRes("fail").message(message), status
 	}
 

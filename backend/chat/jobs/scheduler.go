@@ -26,11 +26,10 @@ func (s *SchedulerImpl) Run() (err error) {
 func (s *SchedulerImpl) Stop() {}
 
 func (s *SchedulerImpl) validateHistoryJob() {
-	clients := s.chatStore.Clients
 	go func() {
 		for {
 			time.Sleep(time.Minute * 10)
-			for _, client := range *clients {
+			for _, client := range s.chatStore.SnapshotClients() {
 				(*client.SendMap).Sync(func() {
 					sendMap := client.SendMap
 					sendMap.Store.Range(func(key, val any) bool {
@@ -52,11 +51,10 @@ func (s *SchedulerImpl) validateHistoryJob() {
 }
 
 func (s *SchedulerImpl) incrementHistoryRefJob() {
-	clients := s.chatStore.Clients
 	go func() {
 		for {
 			time.Sleep(time.Minute * 3)
-			for _, client := range *clients {
+			for _, client := range s.chatStore.SnapshotClients() {
 				(*client.SendMap).Sync(func() {
 					(*client.SendMap).MapRef++
 				})
@@ -66,11 +64,10 @@ func (s *SchedulerImpl) incrementHistoryRefJob() {
 }
 
 func (s *SchedulerImpl) syncHistoryJob() {
-	clients := s.chatStore.Clients
 	go func() {
 		for {
 			time.Sleep(time.Minute * 15)
-			for _, c := range *clients {
+			for _, c := range s.chatStore.SnapshotClients() {
 				client := c
 				if client == nil || client.SendMap == nil {
 					continue
@@ -108,8 +105,9 @@ func (s *SchedulerImpl) removeLogoutUsersJob() {
 	go func() {
 		for {
 			time.Sleep(30 * time.Minute)
-			for userId, client := range *s.chatStore.Clients {
-				if !client.IsOnline && client.LogoutTime.Before(time.Now().Add(-10*time.Minute)) {
+			for userId, client := range s.chatStore.SnapshotClients() {
+				isOnline, logoutTime := client.LogoutSnapshot()
+				if !isOnline && logoutTime.Before(time.Now().Add(-10*time.Minute)) {
 					s.chatStore.DeleteClient(userId)
 				}
 			}

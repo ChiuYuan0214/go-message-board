@@ -31,19 +31,19 @@ func (s *MessageImpl) SendMessage(reqMsg *types.RequestEvent) {
 		HasSync:      false,
 	}
 
-	from, fromExist := s.chatStore.GetClient(reqMsg.UserId)
+	from, fromExist := s.chatStore.FindClient(reqMsg.UserId)
 	if !fromExist {
 		log.Printf("sender %d not exist.", reqMsg.UserId)
 		return
 	}
-	toward, towardExist := s.chatStore.GetClient(reqMsg.TargetUserId)
+	toward, towardExist := s.chatStore.FindClient(reqMsg.TargetUserId)
 	from.SendMap.Lock.Lock()
 	sendList := from.SendMap.GetMessages(reqMsg.TargetUserId)
 	newMsgList := []types.Message{resMsg}
 	from.SendMap.Store.Store(reqMsg.TargetUserId, append(newMsgList, sendList...))
 	from.SendMap.Lock.Unlock()
 
-	if towardExist && toward.IsOnline {
+	if towardExist && toward.IsActive() {
 		if !toward.Write(resMsg) {
 			log.Printf("failed to send message from %d to %d", from.UserId, toward.UserId)
 		}

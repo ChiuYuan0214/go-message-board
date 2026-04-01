@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-func authMiddle(next http.HandlerFunc) http.HandlerFunc {
+func authMiddle(authService services.Auth, next http.HandlerFunc) http.HandlerFunc {
 	return func(writer http.ResponseWriter, req *http.Request) {
 		if req.Method == http.MethodOptions {
 			next.ServeHTTP(writer, req)
@@ -27,7 +27,7 @@ func authMiddle(next http.HandlerFunc) http.HandlerFunc {
 		}
 
 		token := tokenSlice[1]
-		userId := services.GetUserIdFromToken(token)
+		userId := authService.GetUserIdFromToken(token)
 		if userId == 0 {
 			http.Error(writer, "Unauthorized", http.StatusUnauthorized)
 			return

@@ -2,29 +2,37 @@ package jobs
 
 import (
 	"log"
+	"security/repo"
 	"security/store"
 	"time"
 )
 
-func initUsers() {
+type UsersSyncJob struct {
+	userRepo   repo.User
+	usersStore *store.UsersStore
+}
+
+func NewUsersSync(userRepo repo.User, usersStore *store.UsersStore) *UsersSyncJob {
+	return &UsersSyncJob{
+		userRepo:   userRepo,
+		usersStore: usersStore,
+	}
+}
+
+func (j *UsersSyncJob) Run() {
+	go j.initUsers()
+}
+
+func (j *UsersSyncJob) initUsers() {
 	for {
-		rows, err := connPool.Query(`select u.user_id, u.username, ifnull(i.file_name, '') from users u left join images i on i.user_id = u.user_id`)
+		users, err := j.userRepo.ListUsers()
 		if err != nil {
 			log.Println(err)
 			time.Sleep(1 * time.Hour)
+			continue
 		}
-		users := []store.User{}
-		for rows.Next() {
-			var user store.User
-			err = rows.Scan(&user.UserId, &user.UserName, &user.UserImage)
-			if err != nil {
-				log.Println(err)
-				continue
-			}
-			users = append(users, user)
-		}
-		rows.Close()
-		store.SetUsers(users)
+
+		j.usersStore.SetUsers(users)
 		time.Sleep(1 * time.Hour)
 	}
 }
