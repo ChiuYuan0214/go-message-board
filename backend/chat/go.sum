@@ -1,3 +1,5 @@
+github.com/ChiuYuan0214/depin v0.0.0-20260331073741-bbb9f9ba1a61 h1:Z6V6wwJ+bp+y3Z7ENPaAl++uj/TlMqafPGaDDaiXlCw=
+github.com/ChiuYuan0214/depin v0.0.0-20260331073741-bbb9f9ba1a61/go.mod h1:Q1TwIua5S2RjMfYsIUWhKb45qM4kZ1RcDkTIznjpcLA=
 github.com/aws/aws-sdk-go v1.50.29 h1:Ol2FYzesF2tsQrgVSnDWRFI60+FsSqKKdt7MLlZKubc=
 github.com/aws/aws-sdk-go v1.50.29/go.mod h1:LF8svs817+Nz+DmiMQKTO3ubZ/6IaTpq3TjupRn3Eqk=
 github.com/cespare/xxhash/v2 v2.2.0 h1:DC2CZ1Ep5Y4k3ZQ899DldepgrayRUGE6BBZ/cd9Cj44=

@@ -1,24 +1,46 @@
 package services
 
 import (
+	"chat/repo"
+	"chat/store"
 	"chat/types"
 	"context"
 	"log"
 	"time"
 )
 
-func UseTokenChecker(ctx context.Context, cancel context.CancelFunc, userId uint64) {
-	client, _ := chatStore.GetClient(userId)
+var _ Token = (*TokenImpl)(nil)
+
+type TokenImpl struct {
+	tokenRepo repo.Token
+	chatStore *store.ChatStore
+}
+
+func (s *TokenImpl) Run() (err error) {
+	s.chatStore = store.GetChatStore()
+	return
+}
+
+func (s *TokenImpl) Stop() {}
+
+func (s *TokenImpl) ValidateToken(token string, userId uint64) bool {
+	actualToken, err := s.tokenRepo.GetToken(userId)
+	if err != nil {
+		log.Println(err)
+		return false
+	}
+	return token == actualToken
+}
+
+func (s *TokenImpl) UseTokenChecker(ctx context.Context, cancel context.CancelFunc, userId uint64) {
+	client, _ := s.chatStore.GetClient(userId)
 	for {
 		time.Sleep(time.Minute * 10)
 		select {
 		case <-ctx.Done():
 			return
 		default:
-			token := client.Token
-			actualToken, err := cache.GetToken(userId)
-			if err != nil || token != actualToken {
-				log.Println(err)
+			if !s.ValidateToken(client.Token, userId) {
 				client.Write(types.ServerMessage{Event: "error", Content: "token invalid."})
 				cancel()
 				return
@@ -26,5 +48,3 @@ func UseTokenChecker(ctx context.Context, cancel context.CancelFunc, userId uint
 		}
 	}
 }
-
-func RefreshToken(event *types.RequestEvent) {}

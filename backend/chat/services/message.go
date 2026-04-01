@@ -1,26 +1,47 @@
 package services
 
 import (
+	"chat/store"
 	"chat/types"
 	"log"
 	"time"
 )
 
-func SendMessage(reqMsg *types.RequestEvent) {
-	resMsg := types.Message{Event: "message", UserId: reqMsg.UserId, TargetUserId: reqMsg.TargetUserId,
-		Content: reqMsg.Content, Time: time.Now().UnixNano(), Ref: 0, HasSync: false}
+var _ Message = (*MessageImpl)(nil)
 
-	from, fromExist := chatStore.GetClient(reqMsg.UserId)
+type MessageImpl struct {
+	chatStore *store.ChatStore
+}
+
+func (s *MessageImpl) Run() (err error) {
+	s.chatStore = store.GetChatStore()
+	return
+}
+
+func (s *MessageImpl) Stop() {}
+
+func (s *MessageImpl) SendMessage(reqMsg *types.RequestEvent) {
+	resMsg := types.Message{
+		Event:        "message",
+		UserId:       reqMsg.UserId,
+		TargetUserId: reqMsg.TargetUserId,
+		Content:      reqMsg.Content,
+		Time:         time.Now().UnixNano(),
+		Ref:          0,
+		HasSync:      false,
+	}
+
+	from, fromExist := s.chatStore.GetClient(reqMsg.UserId)
 	if !fromExist {
 		log.Printf("sender %d not exist.", reqMsg.UserId)
 		return
 	}
-	toward, towardExist := chatStore.GetClient(reqMsg.TargetUserId)
-	(*from.SendMap).Lock.Lock()
-	sendList := (*from.SendMap).GetMessages(reqMsg.TargetUserId)
+	toward, towardExist := s.chatStore.GetClient(reqMsg.TargetUserId)
+	from.SendMap.Lock.Lock()
+	sendList := from.SendMap.GetMessages(reqMsg.TargetUserId)
 	newMsgList := []types.Message{resMsg}
-	(*from.SendMap).Store.Store(reqMsg.TargetUserId, append(newMsgList, sendList...))
-	(*from.SendMap).Lock.Unlock()
+	from.SendMap.Store.Store(reqMsg.TargetUserId, append(newMsgList, sendList...))
+	from.SendMap.Lock.Unlock()
 
 	if towardExist && toward.IsOnline {
 		if !toward.Write(resMsg) {

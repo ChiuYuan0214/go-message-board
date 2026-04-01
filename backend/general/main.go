@@ -54,5 +54,7 @@ func main() {
 	depin.Set[routes.Handler](new(routes.ViewHandler))
 	depin.Set[routes.Handler](new(routes.VoteHandler))
 
+	depin.Run()
+
 	router.Serve()
 }

@@ -1,6 +1,7 @@
 package services
 
 import (
+	"chat/store"
 	"chat/types"
 	"context"
 	"log"
@@ -9,12 +10,34 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-func InitChatClient(conn *websocket.Conn, userId uint64, token string) {
-	clients := chatStore.Clients
+var _ Chat = (*ChatImpl)(nil)
+
+type ChatImpl struct {
+	followListService FollowList
+	notifyService     Notify
+	chatStore         *store.ChatStore
+}
+
+func (s *ChatImpl) Run() (err error) {
+	s.chatStore = store.GetChatStore()
+	return
+}
+
+func (s *ChatImpl) Stop() {}
+
+func (s *ChatImpl) InitChatClient(conn *websocket.Conn, userId uint64, token string) {
+	clients := s.chatStore.Clients
 	client, exist := (*clients)[userId]
 	if !exist {
-		newClient := &types.Client{UserId: userId, Username: "", Conn: conn, ConnLock: sync.Mutex{},
-			Token: token, IsOnline: true, SendMap: &types.SendMap{Lock: sync.Mutex{}, Store: sync.Map{}}}
+		newClient := &types.Client{
+			UserId:   userId,
+			Username: "",
+			Conn:     conn,
+			ConnLock: sync.Mutex{},
+			Token:    token,
+			IsOnline: true,
+			SendMap:  &types.SendMap{Lock: sync.Mutex{}, Store: sync.Map{}},
+		}
 		(*clients)[userId] = newClient
 	} else {
 		(*client).Conn = conn
@@ -25,22 +48,22 @@ func InitChatClient(conn *websocket.Conn, userId uint64, token string) {
 	go func() {
 		var wg sync.WaitGroup
 		wg.Add(1)
-		go InitFollowerList(&wg, conn, userId)
+		go s.followListService.InitFollowerList(&wg, userId)
 		wg.Add(1)
-		go InitFollowList(&wg, conn, userId)
+		go s.followListService.InitFollowList(&wg, userId)
 		wg.Wait()
-		NotifyLogin(userId)
+		s.notifyService.NotifyLogin(userId)
 	}()
 }
 
-func ListenChatEvent(ctx context.Context, cancel context.CancelFunc, userId uint64) {
-	clients := chatStore.Clients
-	broadcast := chatStore.Broadcast
+func (s *ChatImpl) ListenChatEvent(ctx context.Context, cancel context.CancelFunc, userId uint64) {
+	clients := s.chatStore.Clients
+	broadcast := s.chatStore.Broadcast
 	client := (*clients)[userId]
 
 	defer func() {
 		if _, ok := (*clients)[userId]; ok {
-			NotifyLogout(userId)
+			s.notifyService.NotifyLogout(userId)
 		}
 		client.Logout()
 	}()
@@ -54,7 +77,7 @@ func ListenChatEvent(ctx context.Context, cancel context.CancelFunc, userId uint
 			err := client.Conn.ReadJSON(&msg)
 			if err != nil {
 				if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
-					go NotifyLogout(userId)
+					go s.notifyService.NotifyLogout(userId)
 				}
 				log.Println(err)
 				client.Logout()

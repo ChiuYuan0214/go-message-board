@@ -2,7 +2,6 @@ package store
 
 import (
 	"chat/types"
-	"sync"
 )
 
 type ChatStore struct {
@@ -11,8 +10,10 @@ type ChatStore struct {
 }
 
 func (cs *ChatStore) CreateClient(userId uint64) {
-	(*cs.Clients)[userId] = &types.Client{UserId: userId,
-		SendMap: &types.SendMap{Lock: sync.Mutex{}, Store: sync.Map{}}}
+	(*cs.Clients)[userId] = &types.Client{
+		UserId:  userId,
+		SendMap: new(types.SendMap),
+	}
 }
 
 func (cs *ChatStore) GetClient(userId uint64) (*types.Client, bool) {
