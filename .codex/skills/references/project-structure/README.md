@@ -1,11 +1,30 @@
 # Codebase Reference Index
 
-Folder-based reference for all backend services. Each service function has its own file.
-Use this to find reusable methods before writing new ones.
+Folder-based reference for backend services. Use this to locate ownership, reusable methods, and the current layering shape before opening source files.
+
+Use this file as the entry point for feature planning:
+- identify the owning service first
+- check which layers already exist (`infra`, `repo`, `service`, `routes`, `types`, `entities`)
+- open the smallest relevant reference file before reading source code
+- treat method names and short descriptions as discovery hints only
+- before reusing an existing method, confirm the real source code still matches the intended business logic
+- if schema, args, API, or layering changes, update this index and the affected leaf reference files in the same task
 
 ---
 
 ## General Service — port 8080 (Gin + GORM · MySQL + Redis)
+
+### Layer Map
+
+- `infra`: MySQL (`infra.RDB`), Redis (`infra.Cache`)
+- `repo`: article, vote, comment, tag, tag-map, collection, follower, profile
+- `service`: article, articles, collection, comment, comments, follow, follower, follows, profile, view, vote
+- `routes`: article, articles, collections, comment, comments, follow, follower, follows, profile, view, vote
+
+### Infra and Repo Index
+
+- `infra`: `infra/mysql.go`, `infra/redis.go`, `infra/interface.go`
+- `repo`: `repo/article.go`, `repo/collection.go`, `repo/comment.go`, `repo/follower.go`, `repo/profile.go`, `repo/tag.go`, `repo/tag_map.go`, `repo/vote.go`, `repo/interface.go`
 
 ### Entities
 | File | Table |
@@ -88,6 +107,18 @@ Use this to find reusable methods before writing new ones.
 
 ## Security Service — port 7080 (net/http · MySQL + Redis)
 
+### Layer Map
+
+- `infra/setup`: MySQL, Redis, server bootstrap
+- `store/services`: user lookup, auth, profile, registration flows
+- `routes`: register, verify-code, login, update-password, update-profile, users
+
+### Infra and Persistence Index
+
+- `setup`: `setup/db.go`, `setup/cache.go`, `setup/server.go`
+- `store`: `store/users.go`
+- `services`: `services/login.go`, `services/register.go`, `services/profile.go`, `services/common.go`, `services/base.go`
+
 ### Services
 | File | Function |
 |------|----------|
@@ -118,7 +149,27 @@ Use this to find reusable methods before writing new ones.
 
 ---
 
-## Chat Service — port 9080 (Gorilla WebSocket · MySQL + MongoDB + Redis)
+## Chat Service — port 9080 (Gorilla WebSocket · MySQL + DynamoDB + Redis)
+
+### Layer Map
+
+- `infra`: MySQL (`infra.RDB`), Redis (`infra.Cache`), DynamoDB (`infra.Dynamo`)
+- `repo`: token, follow, history
+- `service`: chat, token, event, history, message, follow-list, follow, notify
+- `jobs`: scheduler
+- `routes`: chat handler
+
+### Infra and Repo Index
+
+- `infra`: `infra/mysql.go`, `infra/redis.go`, `infra/dynamo.go`, `infra/interface.go`
+- `repo`: `repo/token.go`, `repo/follow.go`, `repo/history.go`, `repo/interface.go`
+
+### Infra Responsibilities
+| Impl | Purpose |
+|------|---------|
+| `infra.MySQL` · [Run](chat/infra/mysql/Run.md) / [DB](chat/infra/mysql/DB.md) | MySQL connection lifecycle and raw DB handle access |
+| `infra.Redis` · [Run](chat/infra/redis/Run.md) / [GetToken](chat/infra/redis/GetToken.md) | Redis client lifecycle and token lookup |
+| `infra.DynamoDB` · [Run](chat/infra/dynamo_db/Run.md) / [Client](chat/infra/dynamo_db/Client.md) | DynamoDB client lifecycle and typed client access |
 
 ### Key Types
 | File | Purpose |
@@ -128,26 +179,61 @@ Use this to find reusable methods before writing new ones.
 | [SendMap](chat/types/SendMap.md) | Per-client message cache |
 | [RequestEvent](chat/types/RequestEvent.md) | Client request format |
 | [History](chat/types/History.md) | Message history response |
+| [Notification](chat/types/Notification.md) | Follow/follower online status event |
+| [UserInfoList](chat/types/UserInfoList.md) | Online follow/follower list payload |
+| [ServerMessage](chat/types/ServerMessage.md) | Server-side error / control payload |
+| [DynamoChat](chat/types/DynamoChat.md) | DynamoDB persistence record for chat history |
+| [DynamoClient](chat/types/DynamoClient.md) | Typed DynamoDB wrapper used by history repo |
+| [RedisCache](chat/types/RedisCache.md) | Legacy Redis token helper kept for old type coverage |
+
+### Repo Responsibilities
+| Impl | Purpose |
+|------|---------|
+| `repo.TokenImpl` · [GetToken](chat/repo/token/GetToken.md) | Token lookup via Redis |
+| `repo.FollowImpl` · [GetFollowerIDs](chat/repo/follow/GetFollowerIDs.md) / [GetFollowIDs](chat/repo/follow/GetFollowIDs.md) | Follow/follower lookup via MySQL |
+| `repo.HistoryImpl` · [GetHistory](chat/repo/history/GetHistory.md) / [GetHistoryLimit20](chat/repo/history/GetHistoryLimit20.md) / [BatchInsert](chat/repo/history/BatchInsert.md) | History read/write via DynamoDB |
 
 ### Services
-| File | Function |
+| Impl / Reference | Responsibility |
 |------|----------|
-| [InitChatClient](chat/services/InitChatClient.md) | Create/update client on connect |
-| [ListenChatEvent](chat/services/ListenChatEvent.md) | Main WebSocket read loop |
-| [UseTokenChecker](chat/services/UseTokenChecker.md) | Periodic token validation |
-| [SendMessage](chat/services/SendMessage.md) | Send message to target user |
-| [GetHistory](chat/services/GetHistory.md) | Fetch message history |
-| [InitFollowerList](chat/services/InitFollowerList.md) | Load followers on connect |
-| [InitFollowList](chat/services/InitFollowList.md) | Load follows on connect |
-| [AddFollow](chat/services/AddFollow.md) | Add to follow list |
-| [RemoveFollow](chat/services/RemoveFollow.md) | Remove from follow list |
-| [RemoveFollower](chat/services/RemoveFollower.md) | Remove from follower list |
-| [NotifyLogin](chat/services/NotifyLogin.md) | Broadcast login to followers |
-| [NotifyLogout](chat/services/NotifyLogout.md) | Broadcast logout to followers |
+| `services.ChatImpl` · [InitChatClient](chat/services/chat/InitChatClient.md) / [ListenChatEvent](chat/services/chat/ListenChatEvent.md) | WebSocket client lifecycle and read loop |
+| `services.TokenImpl` · [ValidateToken](chat/services/token/ValidateToken.md) / [UseTokenChecker](chat/services/token/UseTokenChecker.md) | Token validation and periodic token check |
+| `services.EventImpl` · [RunEventLoop](chat/services/event/RunEventLoop.md) / [HandleEvent](chat/services/event/HandleEvent.md) | Broadcast event loop and event dispatch |
+| `services.MessageImpl` · [SendMessage](chat/services/message/SendMessage.md) | Send message to target user |
+| `services.HistoryImpl` · [GetHistory](chat/services/history/GetHistory.md) | History fetch and cache merge |
+| `services.FollowListImpl` · [InitFollowerList](chat/services/follow_list/InitFollowerList.md) / [InitFollowList](chat/services/follow_list/InitFollowList.md) | Load follow graphs on connect |
+| `services.FollowImpl` · [AddFollow](chat/services/follow/AddFollow.md) / [RemoveFollow](chat/services/follow/RemoveFollow.md) / [RemoveFollower](chat/services/follow/RemoveFollower.md) | Update in-memory follow state |
+| `services.NotifyImpl` · [NotifyLogin](chat/services/notify/NotifyLogin.md) / [NotifyLogout](chat/services/notify/NotifyLogout.md) | Broadcast login/logout notifications |
+
+### Routes and State
+
+| Impl / Reference | Purpose |
+|------|---------|
+| `routes.ChatHandler` · [Run](chat/routes/chat_handler/Run.md) / [handleChats](chat/routes/chat_handler/handleChats.md) | WebSocket route registration and connection bootstrap |
+| `routes.RouterImpl` · [Handle](chat/routes/router/Handle.md) / [Serve](chat/routes/router/Serve.md) | `net/http` route registration and server startup |
+| [ChatStore](chat/store/ChatStore.md) | Shared in-memory chat state |
+
+### Wiring Notes
+
+- `main.go` registers `infra -> repo -> service -> jobs -> routes`, then calls `depin.Run()`.
+- `routes.ChatHandler` currently depends on `services.Chat`, `services.Token`, and `services.Event`.
+- `docker-compose.yml` is the preferred integration-test path when validating chat with Redis/MySQL together.
 
 ---
 
 ## Stream Service — port 5000 (Gin + WebSocket · in-memory)
+
+### Layer Map
+
+- `store`: in-memory stream state
+- `service`: live, owner, watcher, record handlers
+- `routes`: socket and HLS handlers
+
+### State and Service Index
+
+- `store`: `store/stream.go`
+- `services`: `services/live.go`, `services/live-record.go`, `services/owner.go`, `services/owner-record.go`, `services/watcher.go`, `services/watcher-record.go`, `services/rtmp.go`
+- `routes`: `routes/socket.go`, `routes/hls.go`, `routes/base.go`, `routes/utils.go`
 
 ### Key Types
 | File | Purpose |
@@ -164,3 +250,13 @@ Use this to find reusable methods before writing new ones.
 | [OwnerRecordService-Handle](stream/services/OwnerRecordService-Handle.md) | Owner text message handling |
 | [WatcherRecordService-Handle](stream/services/WatcherRecordService-Handle.md) | Watcher text message handling |
 | [LiveService-PushStream](stream/services/LiveService-PushStream.md) | Broadcast binary stream |
+
+---
+
+## Reference Backlog
+
+These source areas exist in the repo but do not yet have enough leaf references for fast planning. Prefer adding them when touching the related area:
+
+- `general`: `infra/*`, `repo/*`, `service/*`, shared route plumbing such as `routes/router.go`, `routes/interface.go`, `routes/utils.go`, `routes/follows.go`
+- `security`: `setup/*`, `store/users.go`, shared route helpers/interceptors, and service layer files that are not yet indexed by structure
+- `stream`: `store/stream.go`, route files, and most service/type files still need structure-level references

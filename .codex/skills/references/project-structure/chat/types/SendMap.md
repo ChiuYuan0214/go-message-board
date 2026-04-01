@@ -1,20 +1,27 @@
 # SendMap
 
-**Purpose:** Per-client in-memory message cache (before sync to DynamoDB)
-**File:** `backend/chat/types/`
+**Category:** runtime cache type
+**File:** `backend/chat/types/chat.go`
 
-## Structure
+## Fields
 
-`sync.Map` keyed by `receiverId` (uint64) → `[]Message`
+| Field | Type | Notes |
+|-------|------|-------|
+| `Lock` | `sync.Mutex` | Guards compound cache operations |
+| `Store` | `sync.Map` | `receiverId -> []Message` |
+| `MapRef` | `uint8` | Small internal flag used by history sync logic |
 
 ## Methods
 
 | Method | Notes |
 |--------|-------|
-| `Sync(receiverId)` | Flush cached messages for target to DynamoDB |
-| `GetMessages(receiverId)` | Get all cached messages for target |
-| `GetCacheMessages(receiverId)` | Get unsync'd messages only |
+| `Sync(f)` | Runs a function under the map lock |
+| `GetMessages(receiverId)` | Returns all cached messages for one target, lazily initializing the bucket |
+| `GetCacheMessages(receiverId, startTime, endTime)` | Returns the in-memory history slice for the requested window and the oldest cache timestamp to use for DB fallback |
 
-## Notes
+## Used By
 
-Each `Client` owns one `SendMap`. Messages are buffered here before being persisted. On history fetch, cache is merged with DynamoDB results.
+- Each `types.Client` owns one `SendMap`
+- `services.MessageImpl` appends new unsynced messages
+- `services.HistoryImpl` merges cache with DynamoDB history
+- `jobs.SchedulerImpl` uses the cached messages when syncing to DynamoDB

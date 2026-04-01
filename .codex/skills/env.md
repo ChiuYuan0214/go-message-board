@@ -20,5 +20,6 @@ Use these canonical paths when a skill needs to load shared project guidance.
 ## Usage
 
 - Read this file first when a skill refers to shared paths.
+- All project-specific skills should load `ENGINEERING_RULES` immediately after this file, before reading other project references.
 - Reuse these canonical paths instead of hardcoding duplicated path strings in each skill.
 - Resolve all shared references from this file before opening other docs.

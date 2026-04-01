@@ -4,6 +4,12 @@ These rules apply to all tasks — feature development, refactoring, bug fixes, 
 
 ---
 
+## Terminology
+
+- When the user says `文件` or `doc`, treat that as `.codex/skills/references/project-structure/` unless the user clearly points to some other documentation target.
+
+---
+
 ## File Management
 
 - **Delete empty files.** If a file's content is entirely removed during a task, delete the file. Do not leave behind a file containing only a package declaration or placeholder comment.
@@ -27,5 +33,7 @@ These rules apply to all tasks — feature development, refactoring, bug fixes, 
 
 - Follow dependency order when wiring backend layers. For data-backed features, prefer `entities` → `types` → `repo` → `service` → `route`.
 - HTTP status codes belong in `service`, never in `repo`.
-- Each `routes` handler holds exactly one service interface + the `Router`.
+- Route handlers should hold the `Router` plus only the service interfaces they actually need. HTTP handlers often need one service; WebSocket handlers may need a small set of coordinating services.
 - Register all components in `main.go` via `depin.Set` in bottom-up order.
+- If a feature or refactor changes schema, request/response args, API surface, architecture, layering, ownership, or service/repo/route responsibilities, update `.codex/skills/references/project-structure/` in the same task.
+- Treat `references/project-structure` as a discovery index, not proof of business correctness. Before reusing an existing method for new work, confirm the actual source code still matches the intended business logic.

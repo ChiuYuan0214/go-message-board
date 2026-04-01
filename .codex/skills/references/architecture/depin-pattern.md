@@ -1,6 +1,6 @@
 # go-message-board — Depin Pattern
 
-Use `depin` for backend dependency injection. Prefer struct-based components and avoid package-level mutable dependencies.
+Use `depin` for backend dependency injection. Keep components small, struct-based, and free of package-level mutable dependencies.
 
 ## Layers
 
@@ -18,14 +18,14 @@ routes  transport handlers
 - Repos return data plus `error`, never HTTP status.
 - Services own validation, orchestration, and route-facing status translation.
 - Routes hold `router Router` plus only the service interfaces they need.
-- WebSocket handlers may inject multiple services, but responsibilities should still stay split.
+- WebSocket handlers may inject multiple services, but token checks, event dispatch, history, notifications, and connection lifecycle should still stay split.
 
 ## Lifecycle
 
 - Every registered component implements `Run() error` and `Stop()`.
 - `depin.Set(...)` only registers dependencies.
 - `depin.Run()` is required to inject fields and execute `Run()`.
-- `depin.RunAndSet(...)` is useful when you need the initialized instance immediately, such as `routes.Router`.
+- `depin.RunAndSet(...)` is useful when you need an initialized instance immediately, such as `routes.Router`.
 
 ```go
 router := depin.RunAndSet[routes.Router](new(routes.RouterImpl))

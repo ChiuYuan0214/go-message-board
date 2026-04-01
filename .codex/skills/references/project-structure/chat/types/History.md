@@ -1,7 +1,7 @@
 # History
 
-**Purpose:** Server → client history response
-**File:** `backend/chat/types/`
+**Category:** transport response type
+**File:** `backend/chat/types/history.go`
 
 ## Fields
 
@@ -11,3 +11,8 @@
 | `TargetUserId` | `uint64` | The other user in the conversation |
 | `UserHistory` | `[]Message` | Messages sent by the caller |
 | `TargetHistory` | `[]Message` | Messages sent by the target |
+
+## Used By
+
+- Built by `services.HistoryImpl.GetHistory`
+- Written back to the requester over the WebSocket connection

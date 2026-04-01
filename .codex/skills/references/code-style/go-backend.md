@@ -7,6 +7,7 @@ Applies to all backend services. Prefer the current depin-based structure over o
 - Follow dependency order: `entities -> types -> repo -> service -> route`.
 - In `repo/`, `service/`, and `routes/`, prefer one file and one main struct.
 - Use narrow interfaces per responsibility.
+- When adding or changing methods in `repo/`, `service/`, or `routes/`, update the matching `interface.go` in the same folder in the same task.
 - Register dependencies in `main.go`, then call `depin.Run()` before serving traffic.
 
 ## Repo Style

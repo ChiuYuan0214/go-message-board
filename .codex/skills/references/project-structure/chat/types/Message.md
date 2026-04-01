@@ -1,16 +1,22 @@
 # Message
 
-**Purpose:** Chat message payload (sent and received)
-**File:** `backend/chat/types/`
+**Category:** transport + runtime cache type
+**File:** `backend/chat/types/message.go`
 
 ## Fields
 
 | Field | Type | Notes |
 |-------|------|-------|
-| `Event` | `string` | Event type identifier |
+| `Event` | `string` | Event type identifier, usually `"message"` |
 | `UserId` | `uint64` | Sender |
 | `TargetUserId` | `uint64` | Receiver |
 | `Content` | `string` | Message body |
-| `Time` | `time.Time` | Send timestamp |
-| `HasSync` | `bool` | Whether synced to DB |
-| `Ref` | `string` | Reference ID for dedup |
+| `Time` | `int64` | Unix nanoseconds |
+| `HasSync` | `bool` | Whether the message already exists in persistent history |
+| `Ref` | `uint8` | Small in-memory marker used by cache logic |
+
+## Used By
+
+- Produced by `services.MessageImpl`
+- Stored in `types.SendMap`
+- Embedded in `types.History`
