@@ -24,7 +24,10 @@ func (s *HistoryImpl) Run() (err error) {
 func (s *HistoryImpl) Stop() {}
 
 func (s *HistoryImpl) GetHistory(event *types.RequestEvent) {
-	history := types.History{Event: "history"}
+	history := types.History{
+		Event: "history",
+	}
+
 	timeInt, err := strconv.ParseInt(event.Content, 10, 64)
 	if err != nil {
 		log.Println(err)
@@ -70,15 +73,16 @@ func (s *HistoryImpl) getList(startTime time.Time, endTime time.Time, senderId u
 		}
 		dbList := s.translateMessages(chats)
 		newList := append(sendMap.GetMessages(receiverId), dbList...)
-		list = []types.Message{}
+		var filteredList []types.Message
 		count := 0
 		for _, m := range newList {
 			msgTime := time.Unix(0, m.Time)
 			if msgTime.Before(endTime) && (msgTime.After(startTime) || count < 10) {
-				list = append(list, m)
+				filteredList = append(filteredList, m)
 				count++
 			}
 		}
+		list = filteredList
 		sendMap.Store.Store(receiverId, newList)
 	}
 	sendMap.MapRef = 0
@@ -91,7 +95,8 @@ func (s *HistoryImpl) fetchHistory(senderId uint64, receiverId uint64, startTime
 	chats, err := s.historyRepo.GetHistory(senderId, receiverId, startTime, endTime)
 	if err != nil {
 		log.Println(err)
-		return []types.DynamoChat{}
+		var emptyChats []types.DynamoChat
+		return emptyChats
 	}
 	return chats
 }
@@ -100,13 +105,14 @@ func (s *HistoryImpl) fetchHistoryLimit20(senderId uint64, receiverId uint64, en
 	chats, err := s.historyRepo.GetHistoryLimit20(senderId, receiverId, endTime)
 	if err != nil {
 		log.Println(err)
-		return []types.DynamoChat{}
+		var emptyChats []types.DynamoChat
+		return emptyChats
 	}
 	return chats
 }
 
 func (s *HistoryImpl) translateMessages(chats []types.DynamoChat) []types.Message {
-	dbList := []types.Message{}
+	var dbList []types.Message
 	for _, chat := range chats {
 		msg := types.Message{
 			UserId:       chat.SenderId,

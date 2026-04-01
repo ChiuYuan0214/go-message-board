@@ -45,7 +45,10 @@ func (dc *DynamoClient) GetAllWithFilters(senderId, receiverId uint64, startTime
 
 	if startTime.After(time.Now()) {
 		filterExpression += " AND #time >= :startTime"
-		expressionAttributeValues[":startTime"] = &dynamodb.AttributeValue{S: aws.String(startTime.Format(time.RFC3339))}
+		expressionAttributeValues[":startTime"] = &dynamodb.AttributeValue{
+			S: aws.String(startTime.Format(time.RFC3339)),
+		}
+		input.FilterExpression = aws.String(filterExpression)
 		(*input).Limit = aws.Int64(20)
 	}
 

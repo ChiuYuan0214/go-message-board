@@ -36,7 +36,10 @@ func (s *ChatImpl) InitChatClient(conn *websocket.Conn, userId uint64, token str
 			ConnLock: sync.Mutex{},
 			Token:    token,
 			IsOnline: true,
-			SendMap:  &types.SendMap{Lock: sync.Mutex{}, Store: sync.Map{}},
+			SendMap: &types.SendMap{
+				Lock:  sync.Mutex{},
+				Store: sync.Map{},
+			},
 		}
 		(*clients)[userId] = newClient
 	} else {
@@ -88,7 +91,10 @@ func (s *ChatImpl) ListenChatEvent(ctx context.Context, cancel context.CancelFun
 				continue
 			}
 			if msg.UserId != userId {
-				client.Write(types.ServerMessage{Event: "error", Content: "userId incorrect."})
+				client.Write(types.ServerMessage{
+					Event:   "error",
+					Content: "userId incorrect.",
+				})
 				continue
 			}
 			broadcast <- &msg

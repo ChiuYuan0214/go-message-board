@@ -24,7 +24,9 @@ func (d *DynamoDB) Run() (err error) {
 	if err != nil {
 		return err
 	}
-	d.client = &types.DynamoClient{DB: dynamodb.New(sess)}
+	d.client = &types.DynamoClient{
+		DB: dynamodb.New(sess),
+	}
 	return
 }
 

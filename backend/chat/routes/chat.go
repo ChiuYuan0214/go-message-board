@@ -42,7 +42,13 @@ func (h *ChatHandler) handleChats(w http.ResponseWriter, r *http.Request) {
 	token := utils.GetTokenFromQuery(r)
 	userId := utils.GetUserIdFromToken(token)
 	if !h.tokenService.ValidateToken(token, userId) {
-		conn.WriteJSON(types.ServerMessage{Event: "error", Content: "token invalid."})
+		if err := conn.WriteJSON(types.ServerMessage{
+			Event:   "error",
+			Content: "token invalid.",
+		}); err != nil {
+			log.Println(err)
+		}
+		conn.Close()
 		return
 	}
 

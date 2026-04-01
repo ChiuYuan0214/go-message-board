@@ -41,7 +41,10 @@ func (s *TokenImpl) UseTokenChecker(ctx context.Context, cancel context.CancelFu
 			return
 		default:
 			if !s.ValidateToken(client.Token, userId) {
-				client.Write(types.ServerMessage{Event: "error", Content: "token invalid."})
+				client.Write(types.ServerMessage{
+					Event:   "error",
+					Content: "token invalid.",
+				})
 				cancel()
 				return
 			}

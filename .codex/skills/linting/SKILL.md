@@ -38,7 +38,13 @@ Run the smallest useful validation set for the requested scope, report failures 
    - `go build ./...` for compile safety
    - `go test ./...` when tests exist and are relevant
 4. For cross-service behavior or WebSocket verification, prefer the repo's `docker-compose.yml` flow instead of ad hoc local setup.
-5. Summarize:
+5. Apply project readability rules during lint review:
+   - keyed struct literals use one field per line
+   - unrelated local code blocks have one blank line between them
+   - zero-value structs prefer `var x X`
+   - empty pointer-to-struct values prefer `new(X)`
+   - empty slices prefer `var xs []T`
+6. Summarize:
    - commands run
    - pass/fail result
    - highest-signal errors
@@ -48,7 +54,9 @@ Run the smallest useful validation set for the requested scope, report failures 
 
 - For a backend service, start from that service directory and prefer targeted checks before repo-wide checks.
 - If no dedicated linter is configured, use build and test commands as the baseline validation.
+- In `backend/chat`, prefer `make lint` once the local lint entry exists, then fall back to direct tool commands only when debugging the lint runner itself.
 - If a check is too expensive for the request, say what you skipped and why.
+- If a readability rule cannot be enforced reliably by tooling, keep it in the lint review checklist and call it out explicitly when violated.
 
 ## Guardrails
 

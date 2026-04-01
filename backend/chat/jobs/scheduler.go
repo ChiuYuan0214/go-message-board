@@ -36,7 +36,7 @@ func (s *SchedulerImpl) validateHistoryJob() {
 					sendMap.Store.Range(func(key, val any) bool {
 						receiverId := key.(uint64)
 						msgs := val.([]types.Message)
-						newMsgs := []types.Message{}
+						var newMsgs []types.Message
 						for _, msg := range msgs {
 							if sendMap.MapRef < 3 || !msg.HasSync {
 								newMsgs = append(newMsgs, msg)
@@ -78,8 +78,8 @@ func (s *SchedulerImpl) syncHistoryJob() {
 				go (*client.SendMap).Sync(func() {
 					(*client.SendMap).Store.Range(func(key, val any) bool {
 						msgs := val.([]types.Message)
-						syncList := []types.DynamoChat{}
-						indexList := []int{}
+						var syncList []types.DynamoChat
+						var indexList []int
 						for index, msg := range msgs {
 							if !msg.HasSync {
 								syncList = append(syncList, types.DynamoChat{

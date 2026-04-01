@@ -90,6 +90,14 @@ Use standard grouping:
 - third-party
 - local module
 
+## Local Readability Rules
+
+- For keyed struct literals, put each field on its own line. Avoid single-line forms like `X{A: 1, B: 2}`.
+- Leave one blank line between adjacent code blocks when the variables in those blocks are not directly part of the same local flow.
+- For zero-value struct creation, prefer `var x X` over `x := X{}`.
+- For empty pointer-to-struct creation, prefer `new(X)` over `&X{}`.
+- For empty slice declarations, prefer `var xs []T` over `xs := []T{}` unless you truly need a non-nil empty slice at that point.
+
 ## Google-Style and Linting Guidance
 
 - Keep interfaces small and consumer-oriented.

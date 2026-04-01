@@ -35,7 +35,10 @@ func (s *FollowImpl) AddFollow(event *types.RequestEvent) {
 	if !ok || !target.IsOnline {
 		return
 	}
-	client.Write(types.Notification{Event: "follow-login", UserId: target.UserId})
+	client.Write(types.Notification{
+		Event:  "follow-login",
+		UserId: target.UserId,
+	})
 }
 
 func (s *FollowImpl) RemoveFollow(event *types.RequestEvent) {
@@ -43,7 +46,7 @@ func (s *FollowImpl) RemoveFollow(event *types.RequestEvent) {
 	if !ok {
 		return
 	}
-	newList := []uint64{}
+	var newList []uint64
 	for _, id := range client.FollowList {
 		if id != event.TargetUserId {
 			newList = append(newList, id)
@@ -57,7 +60,7 @@ func (s *FollowImpl) RemoveFollower(event *types.RequestEvent) {
 	if !ok {
 		return
 	}
-	newList := []uint64{}
+	var newList []uint64
 	for _, id := range client.FollowerList {
 		if id != event.TargetUserId {
 			newList = append(newList, id)

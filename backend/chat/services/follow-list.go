@@ -32,7 +32,7 @@ func (s *FollowListImpl) InitFollowerList(wg *sync.WaitGroup, userId uint64) {
 		return
 	}
 
-	onlineList := []uint64{}
+	var onlineList []uint64
 	for _, followerId := range followerList {
 		follower, ok := (*clients)[followerId]
 		if !ok || !follower.IsOnline {
@@ -43,7 +43,10 @@ func (s *FollowListImpl) InitFollowerList(wg *sync.WaitGroup, userId uint64) {
 
 	client := (*clients)[userId]
 	client.FollowerList = followerList
-	client.Write(types.UserInfoList{Event: "online-follower-list", List: onlineList})
+	client.Write(types.UserInfoList{
+		Event: "online-follower-list",
+		List:  onlineList,
+	})
 }
 
 func (s *FollowListImpl) InitFollowList(wg *sync.WaitGroup, userId uint64) {
@@ -56,7 +59,7 @@ func (s *FollowListImpl) InitFollowList(wg *sync.WaitGroup, userId uint64) {
 		return
 	}
 
-	onlineList := []uint64{}
+	var onlineList []uint64
 	for _, followId := range followList {
 		follow, ok := (*clients)[followId]
 		if !ok || !follow.IsOnline {
@@ -67,5 +70,8 @@ func (s *FollowListImpl) InitFollowList(wg *sync.WaitGroup, userId uint64) {
 
 	client := (*clients)[userId]
 	client.FollowList = followList
-	client.Write(types.UserInfoList{Event: "online-follow-list", List: onlineList})
+	client.Write(types.UserInfoList{
+		Event: "online-follow-list",
+		List:  onlineList,
+	})
 }

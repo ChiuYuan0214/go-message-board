@@ -23,7 +23,8 @@ func (sm *SendMap) Sync(f func()) {
 func (sm *SendMap) GetMessages(receiverId uint64) []Message {
 	_, messageExist := sm.Store.Load(receiverId)
 	if !messageExist {
-		sm.Store.Store(receiverId, []Message{})
+		var messages []Message
+		sm.Store.Store(receiverId, messages)
 	}
 	msgs, _ := sm.Store.Load(receiverId)
 
@@ -31,7 +32,7 @@ func (sm *SendMap) GetMessages(receiverId uint64) []Message {
 }
 
 func (sm *SendMap) GetCacheMessages(receiverId uint64, startTime time.Time, endTime time.Time) ([]Message, time.Time) {
-	list := []Message{}
+	var list []Message
 	cache := sm.GetMessages(receiverId)
 	for _, msg := range cache {
 		msgTime := time.Unix(0, msg.Time)
